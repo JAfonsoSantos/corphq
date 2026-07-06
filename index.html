@@ -1110,14 +1110,19 @@ function applyChainTransform(){
 function chainSetScale(sc){ CHAIN_SCALE=Math.max(0.15,Math.min(2,sc)); applyChainTransform(); }
 function chainZoomBy(f){ chainSetScale(CHAIN_SCALE*f); }
 function chainFit(){
-  if(!CHAIN_DIM) return;
-  const w=document.getElementById('chainWrap');
-  const sc=Math.min((w.clientWidth-24)/CHAIN_DIM.W, (w.clientHeight-24)/CHAIN_DIM.H, 1);
-  CHAIN_SCALE=Math.max(0.15,Math.min(2,sc));
-  CHAIN_PANX=Math.max(8,(w.clientWidth - CHAIN_DIM.W*CHAIN_SCALE)/2);
-  CHAIN_PANY=Math.max(8,(w.clientHeight - CHAIN_DIM.H*CHAIN_SCALE)/2);
+  const w=document.getElementById('chainWrap'), cv=document.getElementById('chainCanvas'); if(!w||!cv) return;
+  // measure the REAL content bounds from placed nodes so nothing is ever cut off
+  let maxX=CHAIN_DIM?CHAIN_DIM.W:0, maxY=CHAIN_DIM?CHAIN_DIM.H:0;
+  cv.querySelectorAll('.cnode').forEach(n=>{ const x=(parseFloat(n.style.left)||0)+(n.offsetWidth||216); const y=(parseFloat(n.style.top)||0)+(n.offsetHeight||70); if(x>maxX)maxX=x; if(y>maxY)maxY=y; });
+  if(maxX<=0)maxX=800; if(maxY<=0)maxY=500;
+  const pad=48;
+  const sc=Math.min((w.clientWidth-pad)/maxX, (w.clientHeight-pad)/maxY, 1);
+  CHAIN_SCALE=Math.max(0.1,Math.min(2,sc));
+  CHAIN_PANX=Math.max(12,(w.clientWidth - maxX*CHAIN_SCALE)/2);
+  CHAIN_PANY=Math.max(12,(w.clientHeight - maxY*CHAIN_SCALE)/2);
   applyChainTransform();
 }
+function chainFitSoon(){ chainFit(); requestAnimationFrame(()=>requestAnimationFrame(chainFit)); }
 function computeChainUI(){
   const name = document.getElementById('chainItem').value.trim();
   const rate = parseFloat(document.getElementById('chainRate').value)||60;
@@ -1125,7 +1130,7 @@ function computeChainUI(){
   if(!it) return alert('Item not found: '+name);
   CHAIN_CUR = {slug: it.slug, rate};
   renderChain();
-  chainFit();
+  chainFitSoon();
 }
 function setChainRecipe(slug, rid){ STATE.recipeChoice[slug]=parseInt(rid); persist(false); renderChain(); }
 let CHAIN_LAYOUT={}; // slug -> {x,y} overrides for calculated nodes
