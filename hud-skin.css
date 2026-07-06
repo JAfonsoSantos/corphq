@@ -59,7 +59,7 @@ body.hud-skin #syncState::before{content:"";width:7px;height:7px;border-radius:5
 #hudRail .hud-radar i{font-size:18px;color:var(--hud-cyan)}
 
 /* ---------- main layout ---------- */
-body.hud-skin main{padding:24px 30px 64px !important;max-width:1560px}
+body.hud-skin main{padding:24px 30px 64px !important;max-width:none !important;margin:0 !important;width:auto}
 /* section headings become HUD panel titles with a glowing tick */
 body.hud-skin main > h2, body.hud-skin section.tab > h2{font-family:var(--font-display) !important;font-size:19px !important;font-weight:600 !important;color:#fff !important;margin:26px 0 12px !important;display:flex;align-items:center;gap:9px;letter-spacing:-.01em}
 body.hud-skin main > h2::before, body.hud-skin section.tab > h2::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--hud-cyan);box-shadow:0 0 8px var(--hud-cyan);flex-shrink:0}
@@ -204,3 +204,7 @@ body.hud-skin button.btn:active{transform:translateY(1px)}
 }
 /* focus-visible accessibility ring */
 body.hud-skin a:focus-visible,body.hud-skin button:focus-visible,body.hud-skin input:focus-visible,body.hud-skin select:focus-visible{outline:2px solid var(--hud-cyan);outline-offset:2px}
+
+/* full-width responsiveness for wide screens */
+body.hud-skin section.tab{max-width:none}
+body.hud-skin #chainWrap{width:100%}
