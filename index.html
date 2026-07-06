@@ -1496,12 +1496,16 @@ function renderChain(){
   let corpGen=0; for(const _b of (STATE.bases||[])){ for(const _x of (_b.buildings||[])){ const _v=num(BLD[_x.slug]&&BLD[_x.slug].power); if(_v>0) corpGen+=_v*(_x.count||1); } }
   const powPct=corpGen>0?Math.min(100,Math.round(totPower/corpGen*100)):0;
   const powOver=corpGen>0&&totPower>corpGen;
+  const perBase={}, unBase={p:0,f:0,m:0}; let anyAssigned=false;
+  if(window.CORP){ for(const _n of list){ if(!_n.machines||!_n.ws)continue; const _fp=(num(BLD[_n.ws]&&BLD[_n.ws].footprint)||0)*_n.machines; const _pw=_n.power||0; const _bid=(typeof assignedBaseId==='function')?assignedBaseId(_n.slug):''; if(_bid){ anyAssigned=true; const _b=perBase[_bid]=perBase[_bid]||{p:0,f:0,m:0}; _b.p+=_pw;_b.f+=_fp;_b.m+=_n.machines; } else { unBase.p+=_pw;unBase.f+=_fp;unBase.m+=_n.machines; } } }
+  const perBaseHTML = (window.CORP)?(function(){ let chips=Object.keys(perBase).map(function(id){ const b=(STATE.bases||[]).find(function(x){return x.id===id;}); const v=perBase[id]; return '<span class="basechip">🏠 '+esc(b?b.name:'base')+' · <b>'+v.m+'</b>m · '+fmt(v.p)+' MA · '+fmt(v.f)+' FP</span>'; }); if(unBase.m) chips.push('<span class="basechip un">◍ '+(anyAssigned?'unassigned':'not split across bases yet')+' · <b>'+unBase.m+'</b>m · '+fmt(unBase.p)+' MA · '+fmt(unBase.f)+' FP</span>'); return chips.length?'<span class="pbsep">PER BASE</span>'+chips.join(''):''; })():'';
   document.getElementById('chainSummary').style.display='flex';
   document.getElementById('chainSummary').innerHTML =
     `<span>🏭 <b>${totMach}</b> machines</span>`+
     Object.entries(byWs).map(([w,c])=>`<span>${ico(w,'sm')}${esc(wsName(w))} <b>${c}</b></span>`).join('')+
     (corpGen>0?`<span class="cgauge"><span class="gl">⚡ POWER ${powOver?'⚠ ':''}</span><span class="gv"><b>${fmt(totPower)}</b> / ${fmt(corpGen)} MA</span><span class="gbar${powOver?' over':''}"><span style="width:${powPct}%"></span></span></span>`:`<span>⚡ power <b>${fmt(totPower)}</b> MA</span>`)+
     `<span>▦ footprint <b>${fmt(totFoot)}</b> FP</span>`+
+    perBaseHTML+
     `<span>⛏ raw: ${raws.map(r=>`${ico(r.slug,'sm')}${fmt(r.rate)}/h`).join(' ')}</span>`+
     ((()=>{ const tot=list.reduce((a,n)=>a+(n.corpRate||0),0); const cnt=list.filter(n=>n.corpRate).length; return tot>0? `<span style="color:var(--good)">🏠 corp supplies ${fmt(tot)}/h across ${cnt} inputs (${list.filter(n=>n.supplied).length} fully)</span>` : (covered.length?`<span style="color:var(--good)">🏠 corp has sources for ${covered.length} inputs — set mining on your bases to use them</span>`:''); })())+
     (CHAIN_LOGI?(()=>{ const sl=window.__shuttleLinks||[]; const over=sl.filter(x=>!x.inRange).length; const cols=window.__baseColors||{}; const bl=Object.entries(cols).filter(([b])=>list.some(n=>nodeBase(n)===b)).map(([b,c])=>`<span style="color:${c}">🚀 ${esc(b)}</span>`).join(' '); return `<span style="border-left:1px solid var(--border);padding-left:12px">${bl||'<span class="muted">assign nodes to bases to see the logistics network</span>'}</span>`+(sl.length?`<span>🚀 <b>${sl.length}</b> shuttle transfers${over?` · <span style="color:var(--bad)">${over} beyond ${fmt(SHUTTLE_RANGE/1000)}k range — need cargo/FTL</span>`:` · <span style="color:var(--good)">all in range</span>`}</span>`:''); })():'');

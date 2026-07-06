@@ -208,3 +208,9 @@ body.hud-skin a:focus-visible,body.hud-skin button:focus-visible,body.hud-skin i
 /* full-width responsiveness for wide screens */
 body.hud-skin section.tab{max-width:none}
 body.hud-skin #chainWrap{width:100%}
+
+/* ---- chain per-base capacity split ---- */
+body.hud-skin .pbsep{font-family:var(--font-mono);font-size:9px;letter-spacing:.14em;color:var(--dim2);text-transform:uppercase;border-left:1px solid rgba(96,165,215,.2);padding-left:12px;align-self:center}
+body.hud-skin .basechip{font-family:var(--font-mono);font-size:11px;background:rgba(21,183,159,.1);border:1px solid rgba(95,233,206,.28);color:var(--hud-teal);border-radius:99px;padding:4px 10px}
+body.hud-skin .basechip.un{background:rgba(255,208,73,.1);border-color:rgba(255,208,73,.3);color:var(--hud-amber)}
+body.hud-skin .basechip b{color:inherit}
