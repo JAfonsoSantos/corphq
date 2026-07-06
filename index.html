@@ -1593,6 +1593,9 @@ function computeDeposit(){ const sel=document.getElementById('calcRes'), out=doc
 window.computeDeposit=computeDeposit;
 async function renderActivity(){ const el=document.getElementById('activityFeed'); if(!el)return; const rows=await fetchActivity(); el.innerHTML = rows.length? rows.map(a=>`<div class="actrow"><span class="acti">${ACT_ICON[a.action]||'•'}</span><div class="actbody"><b>${esc(a.actor||'pilot')}</b> ${esc(a.detail||a.action)}</div><span class="actwhen">${timeAgo(a.created_at)}</span></div>`).join('') : '<div class="muted small">No activity yet — add a base or plan a chain and your crew will see it here live.</div>'; }
 setInterval(function(){ try{ if(window.CORP){ var t=document.getElementById('tab-settings'); if(t&&t.classList.contains('active')&&document.getElementById('activityFeed')) renderActivity(); } }catch(e){} }, 8000);
+let ACT_CHANNEL=null;
+function notify(msg){ let e=document.getElementById('hudNotify'); if(!e){ e=document.createElement('div'); e.id='hudNotify'; e.style.cssText='position:fixed;top:70px;right:20px;z-index:300;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none'; document.body.appendChild(e);} const c=document.createElement('div'); c.textContent=msg; c.style.cssText='background:linear-gradient(180deg,rgba(8,18,34,.96),rgba(4,9,18,.97));border:1px solid rgba(102,224,250,.35);color:#eaf3fb;border-radius:10px;padding:10px 14px;font-family:var(--font-mono,monospace);font-size:12px;box-shadow:0 8px 24px #0008;max-width:340px;opacity:0;transition:opacity .25s'; e.appendChild(c); requestAnimationFrame(function(){c.style.opacity="1";}); setTimeout(function(){ c.style.opacity="0"; setTimeout(function(){c.remove();},300); },5200); }
+function subscribeActivity(){ try{ if(!window.CORP||typeof SBC==="undefined"||!SBC||ACT_CHANNEL) return; ACT_CHANNEL=SBC.channel("corp-activity-"+window.CORP.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"corp_activity",filter:"corp_id=eq."+window.CORP.id},function(payload){ var a=payload&&payload.new; if(!a)return; if(a.actor && a.actor!==pilotName()) notify("🛰 "+a.actor+" "+(a.detail||a.action||"")); if(document.getElementById("activityFeed")) renderActivity(); }).subscribe(); }catch(e){ console.warn("realtime",e); } }
 async function savePilotProfile(name){ if(!name||!USER)return; localStorage.setItem('corp:pilot', JSON.stringify({name:name})); await fetch(SYNC.url+'/rest/v1/profiles',{method:'POST',headers:authHeaders({Prefer:'resolution=merge-duplicates'}),body:JSON.stringify([{user_id:USER.id,pilot:name}])}); }
 async function afterAuth(){
   await loadCorpCtx();
@@ -1604,6 +1607,7 @@ async function afterAuth(){
     return;
   }
   closeAuth();
+  subscribeActivity();
   if(window.onCorpReady) window.onCorpReady();
 }
 async function obCreate(){ const n=document.getElementById('obCorpName').value.trim(); const t=document.getElementById('obCorpTag').value.trim(); if(!n){authMsg('Corp name required',true);return;} authMsg('Creating…'); await savePilotProfile(document.getElementById('obPilot').value.trim()||'Pilot'); const q=document.getElementById('obQuad')?document.getElementById('obQuad').value:'abuxey'; const res=await rpc('create_corp',{cname:n,ctag:t||n.slice(0,3).toUpperCase(),cquad:q||'abuxey'}); if(res&&res.ok){ await afterAuth(); logActivity('corp','founded the corp'); } else authMsg((res&&res.error)||JSON.stringify(res)||'Failed',true); }
