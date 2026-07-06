@@ -55,9 +55,13 @@ body.hud-skin #syncState::before{content:"";width:7px;height:7px;border-radius:5
 #hudRail .hud-navitem span{font-family:var(--font-mono);font-size:8.5px;letter-spacing:.04em;text-transform:uppercase;text-align:center;line-height:1.1}
 #hudRail .hud-navitem:hover{background:rgba(102,224,250,.08);color:#cfeefb}
 #hudRail .hud-navitem.active{color:#cfeefb;background:rgba(102,224,250,.1);border-color:rgba(102,224,250,.35)}
-#hudRail .hud-radar{margin-top:auto;width:38px;height:38px;border-radius:50%;border:1px solid rgba(102,224,250,.3);display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
+#hudRail .hud-radar{margin-top:auto;margin-bottom:2px;width:38px;height:38px;border-radius:50%;border:1px solid rgba(102,224,250,.3);display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
 #hudRail .hud-radar::before{content:"";position:absolute;inset:-1px;border-radius:50%;border-top:1px solid var(--hud-cyan);animation:hud-sweep 3.5s linear infinite}
 #hudRail .hud-radar i{font-size:18px;color:var(--hud-cyan)}
+#hudRail .hud-signout{width:72px;padding:9px 0 7px;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;color:var(--dim2);border:1px solid transparent;text-decoration:none;transition:.15s;flex-shrink:0}
+#hudRail .hud-signout i{font-size:20px}
+#hudRail .hud-signout span{font-family:var(--font-mono);font-size:8.5px;letter-spacing:.04em;text-transform:uppercase;text-align:center;line-height:1.1}
+#hudRail .hud-signout:hover{background:rgba(253,86,60,.12);color:#ff9a88;border-color:rgba(253,86,60,.35)}
 
 /* ---------- main layout ---------- */
 body.hud-skin main{padding:24px 30px 64px !important;max-width:none !important;margin:0 !important;width:auto}
@@ -121,6 +125,7 @@ body.hud-skin #bpanel{background:linear-gradient(180deg,rgba(8,18,34,.96),rgba(4
   #hudRail{position:sticky;flex-direction:row;width:100%;height:auto;bottom:auto;padding:8px;gap:6px;overflow-x:auto}
   #hudRail .hud-navlist{flex-direction:row}
   #hudRail .hud-radar{display:none}
+  #hudRail .hud-signout{margin-left:auto;padding:6px 8px}
 }
 
 /* ============================================================

@@ -9,9 +9,10 @@
     document.body.classList.add('hud-skin');
     var rail=document.getElementById('hudRail');
     if(!rail){ rail=document.createElement('nav'); rail.id='hudRail';
-      rail.innerHTML='<div class="hud-logo" title="CorpHQ"><i class="ph-fill ph-shooting-star"></i></div><div class="hud-navlist"></div><div class="hud-radar"><i class="ph-fill ph-broadcast"></i></div>';
+      rail.innerHTML='<div class="hud-logo" title="CorpHQ"><i class="ph-fill ph-shooting-star"></i></div><div class="hud-navlist"></div><div class="hud-radar"><i class="ph-fill ph-broadcast"></i></div><a class="hud-signout" href="javascript:void(0)" title="Sign out"><i class="ph-fill ph-sign-out"></i><span>Exit</span></a>';
       document.body.appendChild(rail);
       rail.querySelector('.hud-logo').onclick=function(){ if(window.showLanding)showLanding(); };
+      rail.querySelector('.hud-signout').onclick=function(){ if(window.authLogout){ if(confirm('Sign out of CorpHQ?')) authLogout(); } else { location.reload(); } };
     }
     var list=rail.querySelector('.hud-navlist'); list.innerHTML='';
     btns.forEach(function(btn){
