@@ -71,6 +71,7 @@ button.btn:hover{filter:brightness(1.12)}
 </style>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Roboto+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.0/src/fill/style.css">
 <style id="hud-map-skin">
 :root{
   --bg:#04060b !important;--panel:#0b1a30 !important;--panel2:#12233c !important;--border:#1d3a5c !important;
@@ -88,20 +89,46 @@ button.btn.warn{background:linear-gradient(150deg,#fd563c,#c6280f) !important;co
 select,input{background:rgba(6,14,26,.7) !important;border:1px solid rgba(96,165,215,.18) !important;color:var(--text) !important;font-family:"Roboto Mono",monospace}
 .resitem.on{background:rgba(102,224,250,.12) !important;color:var(--accent) !important}
 #modal h3{color:var(--accent2) !important;font-family:"Poppins",sans-serif}
+/* --- map header, matched to CorpHQ HUD reference --- */
+#top{height:56px !important;gap:14px !important;padding:0 20px !important}
+#top .mtitle{display:flex;align-items:center;gap:9px}
+#top .mlogo{width:28px;height:28px;border-radius:8px;background:linear-gradient(150deg,#fd563c,#c6280f);display:flex;align-items:center;justify-content:center;box-shadow:0 0 14px rgba(253,86,60,.4)}
+#top .mlogo i{font-size:16px;color:#fff}
+#top .mword{font-family:"Poppins",sans-serif;font-weight:700;font-size:15px;color:#fff;letter-spacing:.02em}
+#top .mpill{display:flex;align-items:center;gap:8px;background:rgba(6,14,26,.7);border:1px solid rgba(96,165,215,.18);border-radius:9px;padding:0 12px;height:36px}
+#top .mpill i{font-size:14px;color:#66e0fa}
+#top .mpill select,#top .mpill input{background:transparent !important;border:0 !important;padding:0 !important;height:34px;font-family:"Roboto Mono",monospace;font-size:12px;color:#c7d4e2 !important;outline:none;cursor:pointer}
+#top .mpill input{width:128px;cursor:text}
+#top .mbtn{display:inline-flex;align-items:center;gap:7px;height:36px;background:rgba(102,224,250,.06);border:1px solid rgba(102,224,250,.22);border-radius:9px;padding:0 13px;color:#cfeefb;font-family:"Roboto Mono",monospace;font-size:11px;letter-spacing:.04em;cursor:pointer}
+#top .mbtn i{font-size:13px}
+#top .mbtn:hover{border-color:rgba(102,224,250,.45)}
+#top .mmeta{font-family:"Roboto Mono",monospace;font-size:11px;letter-spacing:.06em;color:#7d8ba1}
+#top .mback{font-family:"Roboto Mono",monospace;font-size:11px;letter-spacing:.05em;color:#9fb0c4;text-decoration:none}
+#top .mback:hover{color:#cfeefb}
+/* panels re-anchored to 56px header */
+#resPanel,.finder{top:56px !important}
+#backBtn{top:66px !important}
+#routeBar{top:64px !important}
+#status{top:70px !important}
+/* system detail card: top accent line */
+#card{position:relative;border:1px solid rgba(102,224,250,.26) !important;border-radius:14px !important;box-shadow:0 30px 80px rgba(2,8,20,.6) !important}
+#card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#66e0fa,transparent);z-index:3}
+/* legend eyebrow */
+#legend .leg-eyebrow{font-family:"Roboto Mono",monospace;font-size:9px;letter-spacing:.14em;color:#66e0fa;margin-bottom:8px;display:block}
+#legend{font-family:"Roboto Mono",monospace !important}
 </style>
 </head>
 <body>
 <div id="top">
-  <h1 style="display:flex;align-items:center;gap:8px"><svg class="chq-logo" width="26" height="26" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="chqg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5eb2ff"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs><polygon points="32,5 55,18.5 55,45.5 32,59 9,45.5 9,18.5" fill="none" stroke="url(#chqg)" stroke-width="3.5" stroke-linejoin="round"/><ellipse cx="32" cy="32" rx="18" ry="7.5" fill="none" stroke="#5eb2ff" stroke-opacity="0.55" stroke-width="2" transform="rotate(-24 32 32)"/><circle cx="32" cy="32" r="7" fill="url(#chqg)"/><circle cx="47.5" cy="23" r="3.2" fill="#ffb454"/><circle cx="17" cy="42" r="2.2" fill="#4ade80"/></svg>CorpHQ Map</h1>
-  <select id="quadSel"></select>
-  <input id="sysSearch" placeholder="Find system…" list="sysList" style="width:150px">
-  <datalist id="sysList"></datalist>
-  <button class="btn sec" onclick="toggleRes()">Resources</button>
-  <button class="btn sec" id="routeClear" onclick="clearRoute()" style="display:none">Clear route</button>
-  <span class="muted" id="quadInfo"></span>
+  <div class="mtitle"><span class="mlogo"><i class="ph-fill ph-shooting-star"></i></span><span class="mword">CorpHQ Map</span></div>
+  <div class="mpill"><i class="ph-fill ph-globe"></i><select id="quadSel"></select></div>
+  <div class="mpill"><i class="ph-fill ph-magnifying-glass"></i><input id="sysSearch" placeholder="Find system…" list="sysList"><datalist id="sysList"></datalist></div>
+  <button class="mbtn" onclick="toggleRes()"><i class="ph-fill ph-funnel"></i>Resources</button>
+  <button class="mbtn" id="routeClear" onclick="clearRoute()" style="display:none"><i class="ph-fill ph-x"></i>Clear route</button>
+  <span class="mmeta" id="quadInfo"></span>
   <span style="flex:1"></span>
-  <span class="muted" id="pilotChip" style="cursor:pointer" onclick="changePilot()" title="change pilot name"></span>
-  <a href="../">← CorpHQ</a>
+  <span class="mmeta" id="pilotChip" style="cursor:pointer" onclick="changePilot()" title="change pilot name"></span>
+  <a class="mback" href="../">← CorpHQ</a>
 </div>
 <div id="resPanel"></div>
 <div id="finder" class="finder"></div>
@@ -545,7 +572,7 @@ async function init(){
   const saved=localStorage.getItem('corpmap:quad')||'abuxey';
   $('#quadSel').innerHTML=idx.map(q=>`<option value="${q.slug}" ${q.slug===saved?'selected':''}>${q.name} (${q.region})</option>`).join('');
   $('#quadSel').addEventListener('change',e=>loadQuad(e.target.value));
-  $('#legend').innerHTML='<b>Corp Map</b> · hover = info · click = actions (view planets / make base / route)<br>scroll = zoom · drag = pan · <span class="muted">🏠 = corp base · route badges show cost (running total)</span>';
+  $('#legend').innerHTML='<span class="leg-eyebrow">◍ CORP MAP</span>hover = info · click = actions (view planets / make base / route)<br>scroll = zoom · drag = pan · <span class="muted">🏠 = corp base · route badges show cost</span>';
   resize();
   await loadQuad(saved);
   window.onCorpReady=()=>{ pullCorp(); pilotChip(); };
