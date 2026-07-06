@@ -176,3 +176,31 @@ body.hud-skin .crewchip{display:inline-flex;align-items:center;gap:6px}
 body.hud-skin .rolebadge{font-family:var(--font-mono);font-size:8.5px;font-weight:600;letter-spacing:.06em;padding:2px 6px;border-radius:5px}
 body.hud-skin .rolebadge.admin{background:rgba(253,86,60,.16);color:#ff9d8a}
 body.hud-skin .rolebadge.pilot{background:rgba(96,165,215,.14);color:#9fb0c4}
+
+/* ============================================================
+   Launch polish — mobile, loading, empty states, transitions
+   ============================================================ */
+/* responsive: data tables scroll horizontally instead of squashing */
+body.hud-skin #marketBody, body.hud-skin #profitBody, body.hud-skin #tab-database .card{overflow-x:auto;-webkit-overflow-scrolling:touch}
+body.hud-skin .dtable{min-width:520px}
+/* loading + empty states */
+@keyframes hud-shimmer{0%{opacity:.4}50%{opacity:1}100%{opacity:.4}}
+body.hud-skin .hud-loading,body.hud-skin #marketBody.muted,body.hud-skin #profitBody .muted{display:flex;align-items:center;gap:10px;color:var(--dim);font-family:var(--font-mono);font-size:12px;padding:18px}
+body.hud-skin .hud-loading::before{content:"";width:15px;height:15px;border-radius:50%;border:2px solid rgba(102,224,250,.25);border-top-color:var(--cyan);animation:hud-sweep .8s linear infinite}
+body.hud-skin .hud-empty{text-align:center;color:var(--dim);padding:38px 20px;font-size:13px}
+body.hud-skin .hud-empty .ico{font-size:30px;opacity:.5;display:block;margin-bottom:8px}
+/* smoother interactions */
+body.hud-skin .card{transition:border-color .15s,box-shadow .15s}
+body.hud-skin .listrow,body.hud-skin .dtable tbody tr,body.hud-skin .chip,body.hud-skin button.btn{transition:background .13s,border-color .13s,filter .13s,transform .08s}
+body.hud-skin button.btn:active{transform:translateY(1px)}
+/* phones: stack grids, tighten paddings, shrink headings */
+@media(max-width:600px){
+  body.hud-skin main{padding:14px 12px 44px !important}
+  body.hud-skin #dashKpis,body.hud-skin .grid.cols2,body.hud-skin .grid.cols3,body.hud-skin .grid.cols4{grid-template-columns:1fr !important}
+  body.hud-skin h1.hud,body.hud-skin main > h2,body.hud-skin section.tab > h2{font-size:20px !important}
+  body.hud-skin .kpi{font-size:26px !important}
+  body.hud-skin .csum{font-size:11px !important;gap:10px !important}
+  body.hud-skin #chainWrap{height:60vh !important}
+}
+/* focus-visible accessibility ring */
+body.hud-skin a:focus-visible,body.hud-skin button:focus-visible,body.hud-skin input:focus-visible,body.hud-skin select:focus-visible{outline:2px solid var(--hud-cyan);outline-offset:2px}
