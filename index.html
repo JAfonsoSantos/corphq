@@ -254,6 +254,7 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
     <input id="dbSearch" class="searchbox" placeholder="Search items…">
     <select id="dbCat"><option value="">All categories</option></select>
   </div>
+  <div id="dbCatChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px"></div>
   <div class="card" style="margin-top:8px;overflow-x:auto">
     <table id="dbTable" class="dtable"><thead><tr><th>Name</th><th>Category</th><th>Lvl</th><th>Storage</th><th class="right">Price</th><th>Crafted?</th><th>Found in</th></tr></thead><tbody></tbody></table>
     <div class="muted" id="dbCount"></div>
@@ -761,8 +762,22 @@ function baseCard(b, compact){
     ${!compact&&b.notes?`<div class="muted small" style="margin-top:6px">${esc(b.notes)}</div>`:''}
   </div>`;
 }
+function setDbCat(c){ const sel=$('#dbCat'); if(sel) sel.value=c; renderDb(); }
+function renderDbChips(){
+  const box=document.getElementById('dbCatChips'); if(!box) return;
+  const active=($('#dbCat')&&$('#dbCat').value)||'';
+  const counts={}; GAME.items.forEach(i=>{ if(i.category) counts[i.category]=(counts[i.category]||0)+1; });
+  const top=Object.keys(counts).sort((a,b)=>counts[b]-counts[a]).slice(0,6);
+  const chips=[['','All']].concat(top.map(c=>[c,c]));
+  box.innerHTML=chips.map(([val,label])=>{
+    const on=val===active;
+    const cap=label.charAt(0).toUpperCase()+label.slice(1).replace(/-/g,' ');
+    return `<span onclick="setDbCat('${val}')" style="font-family:var(--font-mono,monospace);font-size:10px;letter-spacing:.04em;padding:7px 12px;border-radius:8px;cursor:pointer;border:1px solid ${on?'rgba(102,224,250,.35)':'rgba(96,165,215,.18)'};background:${on?'rgba(102,224,250,.1)':'transparent'};color:${on?'#cfeefb':'#7d8ba1'}">${cap}</span>`;
+  }).join('');
+}
 function renderDb(){
   const q = ($('#dbSearch').value||'').toLowerCase(), cat = $('#dbCat').value;
+  renderDbChips();
   const rows = GAME.items.filter(i=>(!q||i.name.toLowerCase().includes(q))&&(!cat||i.category===cat)).slice(0,300);
   $('#dbTable tbody').innerHTML = rows.map(i=>`<tr onclick="itemDetail('${i.slug}')">
     <td>${itemCell(i.slug)}</td><td class="val-dim">${esc(i.category||'')}</td><td>${esc(i.level||'—')}</td><td>${esc(i.storage||'—')}</td>
