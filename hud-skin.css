@@ -31,7 +31,8 @@ body.hud-skin::after{content:"";position:fixed;left:88px;right:0;top:0;height:16
 @keyframes hud-scan{0%{transform:translateY(-120%)}100%{transform:translateY(640%)}}
 @keyframes hud-sweep{to{transform:rotate(360deg)}}
 @keyframes hud-blink{0%,100%{opacity:1}50%{opacity:.3}}
-body.hud-skin header, body.hud-skin main, body.hud-skin #landing{position:relative;z-index:1}
+body.hud-skin header, body.hud-skin main{position:relative;z-index:1}
+/* #landing stays a fixed full-screen overlay (its own #landing{position:fixed;z-index:150} rule) */
 
 /* ---------- topbar ---------- */
 body.hud-skin header{background:rgba(6,13,24,.92) !important;border-bottom:1px solid rgba(96,165,215,.16) !important;padding:0 24px !important;height:60px;gap:16px;backdrop-filter:blur(6px)}
