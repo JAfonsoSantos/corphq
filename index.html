@@ -197,6 +197,7 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
 </style>
 <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.0/src/fill/style.css">
 <link rel="stylesheet" href="./hud-skin.css">
+<style>@keyframes hudspin{to{transform:rotate(360deg)}}</style>
 </head>
 <body>
 <header>
@@ -283,7 +284,7 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
       <label class="muted small" style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="profitCorpOnly" onchange="renderProfit()"> only items my corp can fully supply</label>
       <span class="muted small" id="profitInfo"></span>
     </div>
-    <div id="profitBody" style="overflow-x:auto;margin-top:8px" class="muted">Loading market…</div>
+    <div id="profitBody" style="overflow-x:auto;margin-top:8px"></div>
   </div>
 </section>
 <section class="tab" id="tab-market">
@@ -293,7 +294,7 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
       <select id="mktQuadSel" onchange="setMarketQuad(this.value)" title="quadrant"></select>
       <span class="muted small" id="mktInfo"></span>
     </div>
-    <div id="marketBody" style="overflow-x:auto;margin-top:8px" class="muted">Loading market…</div>
+    <div id="marketBody" style="overflow-x:auto;margin-top:8px"></div>
   </div>
 </section>
 <section class="tab" id="tab-chain">
@@ -710,7 +711,7 @@ function render(){
   }
 
   /* bases */
-  $('#basesList').innerHTML = STATE.bases.map(b=>baseCard(b,false)).join('') || '<div class="muted">No bases yet — add the first one.</div>';
+  $('#basesList').innerHTML = STATE.bases.map(b=>baseCard(b,false)).join('') || emptyStateHTML({icon:'ph-planet',fg:'#ff7b66',title:'No bases yet',desc:'Register your first base — pin it from the galaxy map or search a system. Add its deposits and extractors and the whole corp shares the same live picture.',ctas:[{label:'Register base',icon:'ph-plus',primary:true,on:'App.editBase(null)'},{label:'Open map',icon:'ph-map-trifold',on:"location.href='map/'"}]});
 
   /* planner */
   $('#targets').innerHTML = STATE.planTargets.map((t,i)=>`<span class="chip">${ico(t.slug,'sm')}${esc(itemName(t.slug))} ×${t.qty} <span class="pointer" title="open in Chain Designer" onclick="App.toChain('${t.slug}')">⚙</span> <span class="pointer" onclick="App.rmTarget(${i})">✕</span></span>`).join('') || '<span class="muted small">no targets</span>';
@@ -964,8 +965,10 @@ function buildUnitCost(slug, depth, seen){
   seen.delete(slug);
   return cost/outQty;
 }
+function emptyStateHTML(o){ o=o||{}; var ctas=(o.ctas||[]).map(function(c){ var pri=c.primary?'background:linear-gradient(150deg,#fd563c,#c6280f);border:1px solid #ff7b66;color:#fff;box-shadow:0 0 18px rgba(253,86,60,.3)':'background:rgba(102,224,250,.06);border:1px solid rgba(102,224,250,.24);color:#cfeefb'; return '<button onclick="'+c.on+'" style="display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:9px;'+pri+';font-family:var(--font-mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer"><i class="ph-fill '+c.icon+'" style="font-size:14px"></i>'+c.label+'</button>'; }).join(''); return '<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;text-align:center;padding:44px 24px;border:1px dashed rgba(96,165,215,.22);border-radius:14px;background:rgba(6,14,26,.4)"><span style="width:60px;height:60px;border-radius:15px;background:rgba(102,224,250,.06);border:1px solid rgba(102,224,250,.18);display:flex;align-items:center;justify-content:center;margin-bottom:16px"><i class="ph-fill '+o.icon+'" style="font-size:30px;color:'+(o.fg||'#66e0fa')+'"></i></span><h3 style="font-family:var(--font-display);font-size:18px;font-weight:600;color:#eaf3fb;margin:0 0 7px">'+o.title+'</h3><p style="font-size:13px;color:#8a94a6;margin:0 0 18px;max-width:440px;line-height:1.55">'+o.desc+'</p>'+(ctas?'<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">'+ctas+'</div>':'')+'</div>'; }
+function hudLoadingHTML(t){ return '<div style="display:flex;align-items:center;justify-content:center;gap:11px;padding:44px 20px;color:#8a94a6;font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase"><span style="width:15px;height:15px;border:2px solid rgba(102,224,250,.25);border-top-color:#66e0fa;border-radius:50%;display:inline-block;animation:hudspin .8s linear infinite"></span>'+(t||'Loading market data')+'</div>'; }
 function renderMarket(){
-  const el=document.getElementById('marketBody'); if(!el||!window.MARKET) return;
+  const el=document.getElementById('marketBody'); if(!el) return; if(!window.MARKET){ el.innerHTML=hudLoadingHTML('Loading market prices'); return; }
   const q=mktQuad(); const rows=window.MARKET.quads[q]||{};
   const search=(document.getElementById('mktSearch')||{}).value||'';
   const list=Object.entries(rows).map(([slug,v])=>({slug, name:itemName(slug), av:v[0],mn:v[1],mx:v[2],o:v[3],u:v[4]}))
@@ -979,7 +982,7 @@ function setMarketQuad(q){ window.marketQuad=q; renderMarket(); renderProfit(); 
 // Profit Advisor: what can the corp make, and does it sell for more than it costs to build?
 function renderProfit(){
   const el=document.getElementById('profitBody'); if(!el) return;
-  if(!window.MARKET){ el.innerHTML='<div class="muted">Loading market…</div>'; return; }
+  if(!window.MARKET){ el.innerHTML=hudLoadingHTML('Loading market prices'); return; }
   const q=mktQuad();
   const rows=[];
   for(const it of GAME.items){
@@ -998,6 +1001,7 @@ function renderProfit(){
   if(onlyCorp) show=show.filter(x=>x.totalInputs>0 && x.corpInputs===x.totalInputs);
   show.sort((a,b)=>b.margin-a.margin);
   document.getElementById('profitInfo').textContent = `${show.length} profitable items · sell prices from quadrant ${q}`;
+  if(!show.length){ el.innerHTML=emptyStateHTML({icon:'ph-trend-up',fg:'#5fe9ce',title:'Nothing clears the bar yet',desc:'No craftable items pass the current margin filter with a liquid market in this quadrant. Lower the min-margin, switch quadrant, or add bases so more inputs count as corp-supplied.',ctas:[{label:'Explore market',icon:'ph-chart-line',on:"App.show('market')"}]}); return; }
   el.innerHTML = '<table class="dtable"><thead><tr><th>Item</th><th class="right">Sell avg</th><th class="right">Build cost</th><th class="right">Margin/unit</th><th class="right">Markup</th><th>Corp ready</th><th></th></tr></thead><tbody>'+
     show.slice(0,120).map(x=>`<tr onclick="itemDetail('${x.slug}')">
       <td>${itemCell(x.slug)}</td>
@@ -1646,20 +1650,23 @@ function renderChain(){
 </div>
 </div>
 <div id="authGate" style="position:fixed;inset:0;background:#0b0e14ee;z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px)">
-  <div style="background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:26px;width:390px;max-height:88vh;overflow-y:auto">
-    <h2 style="margin:0 0 4px;color:var(--accent)">🛰️ CorpHQ</h2>
+  <div style="position:relative;background:linear-gradient(180deg,rgba(8,18,34,.97),rgba(4,9,18,.98));border:1px solid rgba(102,224,250,.28);border-radius:16px;padding:30px 30px 24px;width:440px;max-width:92vw;max-height:90vh;overflow-y:auto;box-shadow:0 30px 80px rgba(2,8,20,.6)">
+    <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#66e0fa,transparent)"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span style="width:34px;height:34px;border-radius:10px;background:linear-gradient(150deg,#fd563c,#c6280f);display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(253,86,60,.45)"><i class="ph-fill ph-shooting-star" style="font-size:19px;color:#fff"></i></span><span style="font-family:var(--font-display);font-weight:700;font-size:22px;color:#fff">CorpHQ</span><span style="font-family:var(--font-mono);font-size:9px;letter-spacing:.14em;color:#66e0fa;border:1px solid rgba(102,224,250,.3);border-radius:5px;padding:2px 6px;margin-left:auto">FLEET&nbsp;CMD</span></div>
     <div id="authStep1">
-      <p class="muted" style="margin:0 0 14px">Sign in with your email — we send a 6-digit code. New pilots welcome, it's free.</p>
-      <input id="authEmail" type="email" placeholder="you@email.com" style="width:100%;margin-bottom:10px">
-      <button class="btn" style="width:100%" onclick="authSend()">Send code</button>
+      <p style="margin:2px 0 18px;font-size:15px;line-height:1.55;color:#c7d4e2">Sign in with your <b style="color:#fff">email</b> — we send a 6-digit code. New pilots welcome, it&#39;s free.</p>
+      <input id="authEmail" type="email" placeholder="you@email.com" style="width:100%;margin-bottom:12px;font-size:15px;padding:13px 14px;border-radius:11px">
+      <button class="btn" style="width:100%;font-size:14px;padding:13px;justify-content:center" onclick="authSend()"><i class="ph-fill ph-sign-in" style="font-size:15px"></i> Send code</button>
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-top:16px;padding:12px 13px;border:1px solid rgba(95,233,206,.25);border-radius:11px;background:rgba(21,183,159,.07)"><i class="ph-fill ph-lock-key" style="font-size:18px;color:#5fe9ce;flex-shrink:0;margin-top:1px"></i><span style="font-size:12.5px;line-height:1.5;color:#c7d4e2">Your email is <b style="color:#fff">only</b> used to send your login code — <b style="color:#fff">no passwords, no marketing, never shared</b> with anyone.</span></div>
     </div>
     <div id="authStep2" style="display:none">
-      <input id="authCode" inputmode="numeric" placeholder="6-digit code" style="width:100%;margin:0 0 10px;letter-spacing:6px;text-align:center;font-size:20px" autocomplete="one-time-code">
-      <button class="btn" style="width:100%" onclick="authVerify()">Verify & enter</button>
-      <div class="muted" style="margin-top:8px;text-align:center;cursor:pointer" onclick="authBack()">← different email</div>
+      <p style="margin:2px 0 14px;font-size:14px;color:#c7d4e2">Enter the 6-digit code we just emailed you.</p>
+      <input id="authCode" inputmode="numeric" placeholder="------" style="width:100%;margin:0 0 12px;letter-spacing:10px;text-align:center;font-size:26px;padding:12px;border-radius:11px" autocomplete="one-time-code">
+      <button class="btn" style="width:100%;font-size:14px;padding:13px;justify-content:center" onclick="authVerify()">Verify &amp; enter</button>
+      <div style="margin-top:12px;text-align:center;cursor:pointer;font-size:12.5px;color:#9fb0c4" onclick="authBack()">← use a different email</div>
     </div>
     <div id="authOnboard" style="display:none">
-      <p class="muted" style="margin:0 0 10px">You're in! Set up your pilot and corp:</p>
+      <p style="margin:2px 0 14px;font-size:15px;color:#c7d4e2">You&#39;re in! 🎉 Set up your pilot and corp:</p>
       <label class="muted" style="font-size:11px">Pilot name</label>
       <input id="obPilot" style="width:100%;margin:4px 0 14px" placeholder="e.g. Corrupted">
       <div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px">
@@ -1675,8 +1682,8 @@ function renderChain(){
         <button class="btn sec" style="width:100%" onclick="obJoinFn()">Join with code</button>
       </div>
     </div>
-    <div id="authMsg" class="muted" style="margin-top:10px;min-height:16px"></div>
-    <div style="text-align:center;margin-top:6px"><span class="muted" style="cursor:pointer;font-size:11px" onclick="closeAuth()">close</span></div>
+    <div id="authMsg" style="margin-top:12px;min-height:16px;font-size:13px;color:#9fb0c4"></div>
+    <div style="text-align:center;margin-top:10px"><span style="cursor:pointer;font-size:12px;color:#7d8ba1" onclick="closeAuth()">close</span></div>
   </div>
 </div>
 <script>
