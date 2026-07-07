@@ -415,6 +415,7 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
       <label>Planet / Moon<br><input id="bPlanet" style="width:100%"></label>
       <label>Coords / landmark<br><input id="bCoords" style="width:100%"></label>
     </div>
+    <div class="row" style="margin:2px 0 8px"><button type="button" class="btn sec" onclick="App.findOnMap()"><i class="ph-fill ph-map-pin-line"></i> Find on map</button><span class="muted small" id="bLocHint" style="align-self:center">search a system on the galaxy map and pin this base</span></div>
     <label>Notes<br><textarea id="bNotes" rows="2" style="width:100%"></textarea></label>
     <h3 class="small" style="margin:10px 0 4px">Deposits / nodes at this base</h3>
     <div id="bDeposits"></div>
@@ -631,6 +632,44 @@ const App = {
     draftMining = structuredClone(b.mining||[]); draftProduction = structuredClone(b.production||[]);
     $('#bDelete').style.display = id?'':'none';
     App.renderDraftLists();
+    $('#baseDialog').showModal();
+  },
+  findOnMap(){
+    // stash the whole in-progress base so nothing is lost while the user picks a spot on the map
+    try{
+      var draft={
+        id: editingBaseId||null,
+        name:$('#bName').value, owner:$('#bOwner').value,
+        quadrant:$('#bQuadrant').value, system:$('#bSystem').value, planet:$('#bPlanet').value,
+        coords:$('#bCoords').value, notes:$('#bNotes').value,
+        deposits:draftDeposits, buildings:draftBuildings, mining:draftMining, production:draftProduction
+      };
+      localStorage.setItem('corp:basedraft', JSON.stringify(draft));
+    }catch(e){}
+    location.href='map/?pick=1';
+  },
+  restoreDraftFromMap(){
+    var draft=null, loc=null;
+    try{ draft=JSON.parse(localStorage.getItem('corp:basedraft')||'null'); }catch(e){}
+    try{ loc=JSON.parse(localStorage.getItem('corp:pickloc')||'null'); }catch(e){}
+    localStorage.removeItem('corp:basedraft'); localStorage.removeItem('corp:pickloc');
+    draft=draft||{};
+    editingBaseId = draft.id||null;
+    $('#baseDialogTitle').textContent = editingBaseId?'Edit base':'Add base';
+    if(loc){
+      if(loc.quadrant) draft.quadrant=loc.quadrant;
+      if(loc.system) draft.system=loc.system;
+      if(loc.planet) draft.planet=loc.planet;
+      if(loc.coords) draft.coords=loc.coords;
+      if(!draft.name && loc.system) draft.name=(loc.planet||loc.system)+' Base';
+    }
+    $('#bName').value=draft.name||''; $('#bOwner').value=draft.owner||''; $('#bQuadrant').value=draft.quadrant||'';
+    $('#bSystem').value=draft.system||''; $('#bPlanet').value=draft.planet||''; $('#bCoords').value=draft.coords||''; $('#bNotes').value=draft.notes||'';
+    draftDeposits = structuredClone(draft.deposits||[]); draftBuildings = structuredClone(draft.buildings||[]);
+    draftMining = structuredClone(draft.mining||[]); draftProduction = structuredClone(draft.production||[]);
+    $('#bDelete').style.display = editingBaseId?'':'none';
+    App.renderDraftLists();
+    if(loc){ var h=$('#bLocHint'); if(h){ h.textContent='✓ pinned: '+[loc.system,loc.planet].filter(Boolean).join(' · '); h.style.color='var(--good)'; } }
     $('#baseDialog').showModal();
   },
   renderDraftLists(){
@@ -2072,6 +2111,7 @@ async function authInit(){
   else if(window.onGuest) window.onGuest();
   // preview/test the onboarding stepper anytime: corphq.space/?onboarding
   try{ if(/onboarding/i.test(location.search+location.hash)){ setTimeout(function(){ if(window.openOnboard) openOnboard(); }, 400); } }catch(e){}
+  try{ if(/[?&]picked=1/.test(location.search)){ history.replaceState(null,'',location.pathname); setTimeout(function(){ if(App&&App.restoreDraftFromMap) App.restoreDraftFromMap(); }, 500); } }catch(e){}
   SBC.auth.onAuthStateChange((ev,s)=>{ if(s){TOKEN=s.access_token; USER=s.user; window.TOKEN=TOKEN; window.USER=USER;} });
 }
 authInit();
