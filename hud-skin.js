@@ -13,10 +13,12 @@
       document.body.appendChild(rail);
       rail.querySelector('.hud-logo').onclick=function(){ if(window.showLanding)showLanding(); };
       rail.querySelector('.hud-signout').onclick=function(){
-        if(!confirm('Sign out of CorpHQ?')) return;
-        try{ if(window.authLogout){ window.authLogout(); return; } }catch(e){}
-        try{ Object.keys(localStorage).forEach(function(k){ if(/^sb-.*-auth-token$/.test(k)) localStorage.removeItem(k); }); }catch(e){}
-        location.replace(location.pathname);
+        // Bulletproof logout: clear the Supabase session synchronously and hard-reload.
+        // No confirm() (can be suppressed by the browser) and no async that could hang.
+        try{ Object.keys(localStorage).forEach(function(k){ if(/^sb-.*auth-token$/.test(k) || k.indexOf('supabase.auth')===0) localStorage.removeItem(k); }); }catch(e){}
+        try{ Object.keys(sessionStorage).forEach(function(k){ if(/^sb-.*auth-token$/.test(k)) sessionStorage.removeItem(k); }); }catch(e){}
+        try{ if(window.authLogout) window.authLogout(); }catch(e){}
+        location.replace(location.pathname + '?out=' + Date.now());
       };
     }
     var list=rail.querySelector('.hud-navlist'); list.innerHTML='';
