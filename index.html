@@ -1882,6 +1882,56 @@ function renderChain(){
     <div style="text-align:center;margin-top:10px"><span style="cursor:pointer;font-size:12px;color:#7d8ba1" onclick="closeAuth()">close</span></div>
   </div>
 </div>
+<div id="onboard" style="position:fixed;inset:0;z-index:250;display:none;background:radial-gradient(1000px 600px at 72% -10%,#06305c,#04101f 52%,#04060b);overflow-y:auto;color:#dce6f2">
+  <style>
+  #onboard input,#onboard select{background:rgba(6,14,26,.78);border:1px solid rgba(96,165,215,.22);color:#eaf3fb;outline:none}
+  #onboard input:focus,#onboard select:focus{border-color:rgba(102,224,250,.5)}
+  #onboard .obtab{flex:1;padding:10px;border-radius:9px;background:rgba(6,14,26,.6);border:1px solid rgba(96,165,215,.18);color:#9fb0c4;font-family:var(--font-mono,monospace);font-size:11px;cursor:pointer}
+  #onboard .obtab.act{background:rgba(102,224,250,.1);border-color:rgba(102,224,250,.4);color:#cfeefb}
+  #onboard .obrow{display:flex;align-items:center;gap:11px;padding:11px 13px;border:1px solid rgba(96,165,215,.16);border-radius:10px;margin-bottom:8px;background:rgba(6,14,26,.5)}
+  </style>
+  <div style="max-width:600px;margin:0 auto;padding:48px 22px 48px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <span style="width:34px;height:34px;border-radius:10px;background:linear-gradient(150deg,#fd563c,#c6280f);display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(253,86,60,.45)"><i class="ph-fill ph-shooting-star" style="font-size:19px;color:#fff"></i></span>
+      <span style="font-family:var(--font-display,sans-serif);font-weight:700;font-size:20px;color:#fff">CorpHQ</span>
+      <span id="obDots" style="margin-left:auto;font-family:var(--font-mono,monospace);font-size:11px;letter-spacing:.1em;color:#66e0fa"></span>
+    </div>
+    <div id="obStep1">
+      <h2 style="font-family:var(--font-display,sans-serif);font-size:26px;font-weight:700;color:#fff;margin:24px 0 6px">Welcome, pilot 🛰️</h2>
+      <p style="font-size:14px;color:#8a94a6;margin:0 0 22px">Set up your commander profile — takes 20 seconds.</p>
+      <label style="font-family:var(--font-mono,monospace);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#7d8ba1">Pilot name (in-game)</label>
+      <input id="obPilotName" placeholder="e.g. Corrupted" style="width:100%;margin:6px 0 18px;font-size:15px;padding:12px 14px;border-radius:10px">
+      <label style="font-family:var(--font-mono,monospace);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#7d8ba1">Home quadrant</label>
+      <select id="obQuadSel" style="width:100%;margin:6px 0 22px;font-size:15px;padding:12px 14px;border-radius:10px"></select>
+      <button class="btn" style="width:100%;padding:13px;font-size:14px;justify-content:center" onclick="obGo(2)">Continue →</button>
+    </div>
+    <div id="obStep2" style="display:none">
+      <h2 style="font-family:var(--font-display,sans-serif);font-size:26px;font-weight:700;color:#fff;margin:24px 0 6px">Your corporation</h2>
+      <p style="font-size:14px;color:#8a94a6;margin:0 0 18px">Create a new corp, join with an invite code, or find an existing one.</p>
+      <div id="obTabs" style="display:flex;gap:6px;margin-bottom:18px">
+        <button class="obtab act" data-t="create" onclick="obTab('create')">➕ Create</button>
+        <button class="obtab" data-t="join" onclick="obTab('join')">🎟 Invite code</button>
+        <button class="obtab" data-t="search" onclick="obTab('search')">🔍 Find a corp</button>
+      </div>
+      <div id="obTabCreate">
+        <input id="obCName" placeholder="Corp name" style="width:100%;margin-bottom:8px;padding:11px 13px;border-radius:10px;font-size:14px">
+        <div style="display:flex;gap:8px;margin-bottom:8px"><input id="obCTag" placeholder="Tag (VGX)" maxlength="5" style="flex:1;min-width:0;padding:11px 13px;border-radius:10px;font-size:14px"><select id="obCQuad" style="flex:2;min-width:0;padding:11px 13px;border-radius:10px;font-size:14px"></select></div>
+        <button class="btn" style="width:100%;padding:12px;justify-content:center" onclick="obCreateCorp()">Create corp & enter</button>
+      </div>
+      <div id="obTabJoin" style="display:none">
+        <input id="obJoinCode" placeholder="Invite code from your corp mate" style="width:100%;margin-bottom:8px;padding:11px 13px;border-radius:10px;font-size:14px">
+        <button class="btn sec" style="width:100%;padding:12px;justify-content:center" onclick="obJoinCodeFn()">Join with code</button>
+      </div>
+      <div id="obTabSearch" style="display:none">
+        <div style="display:flex;gap:8px;margin-bottom:10px"><input id="obSearchQ" placeholder="Search corp name or tag…" oninput="obSearchDebounced()" style="flex:1;min-width:0;padding:11px 13px;border-radius:10px;font-size:14px"><button class="btn sec" style="padding:11px 14px" onclick="obSearch()">Search</button></div>
+        <div id="obSearchResults"></div>
+      </div>
+      <div style="text-align:center;margin-top:14px"><span onclick="obGo(1)" style="cursor:pointer;font-size:12px;color:#9fb0c4">← Back</span></div>
+    </div>
+    <div id="obMsg" style="min-height:18px;margin-top:14px;font-size:13px;color:#9fb0c4;text-align:center"></div>
+    <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid rgba(96,165,215,.12)"><span onclick="authLogout()" style="cursor:pointer;font-family:var(--font-mono,monospace);font-size:11px;letter-spacing:.05em;color:#7d8ba1">⏻ Sign out</span></div>
+  </div>
+</div>
 <script>
 const SBC = window.supabase.createClient(SYNC.url, SYNC.key);
 let TOKEN=null, USER=null;
@@ -1914,16 +1964,43 @@ let ACT_CHANNEL=null;
 function notify(msg){ let e=document.getElementById('hudNotify'); if(!e){ e=document.createElement('div'); e.id='hudNotify'; e.style.cssText='position:fixed;top:70px;right:20px;z-index:300;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none'; document.body.appendChild(e);} const c=document.createElement('div'); c.textContent=msg; c.style.cssText='background:linear-gradient(180deg,rgba(8,18,34,.96),rgba(4,9,18,.97));border:1px solid rgba(102,224,250,.35);color:#eaf3fb;border-radius:10px;padding:10px 14px;font-family:var(--font-mono,monospace);font-size:12px;box-shadow:0 8px 24px #0008;max-width:340px;opacity:0;transition:opacity .25s'; e.appendChild(c); requestAnimationFrame(function(){c.style.opacity="1";}); setTimeout(function(){ c.style.opacity="0"; setTimeout(function(){c.remove();},300); },5200); }
 function subscribeActivity(){ try{ if(!window.CORP||typeof SBC==="undefined"||!SBC||ACT_CHANNEL) return; ACT_CHANNEL=SBC.channel("corp-activity-"+window.CORP.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"corp_activity",filter:"corp_id=eq."+window.CORP.id},function(payload){ var a=payload&&payload.new; if(!a)return; if(a.actor && a.actor!==pilotName()) notify("🛰 "+a.actor+" "+(a.detail||a.action||"")); if(document.getElementById("activityFeed")) renderActivity(); }).subscribe(); }catch(e){ console.warn("realtime",e); } }
 async function savePilotProfile(name){ if(!name||!USER)return; localStorage.setItem('corp:pilot', JSON.stringify({name:name})); await fetch(SYNC.url+'/rest/v1/profiles',{method:'POST',headers:authHeaders({Prefer:'resolution=merge-duplicates'}),body:JSON.stringify([{user_id:USER.id,pilot:name}])}); }
+let OB_STEP=1;
+function obMsg(t,bad){ const e=document.getElementById('obMsg'); if(e){ e.textContent=t||''; e.style.color=bad?'#ff9a88':'#9fb0c4'; } }
+function obStepShow(n){ OB_STEP=n; const a=document.getElementById('obStep1'),b=document.getElementById('obStep2'); if(a)a.style.display=n===1?'block':'none'; if(b)b.style.display=n===2?'block':'none'; const d=document.getElementById('obDots'); if(d)d.textContent='STEP '+n+' / 2'; }
+function openOnboard(){
+  closeAuth();
+  const ov=document.getElementById('onboard'); if(!ov) return;
+  if(window.QUADS){ ['obQuadSel','obCQuad'].forEach(function(id){ const el=document.getElementById(id); if(el&&!el.innerHTML) el.innerHTML=window.QUADS; }); }
+  const pn=pilotName(); if(pn){ const el=document.getElementById('obPilotName'); if(el&&!el.value) el.value=pn; }
+  try{ const pq=localStorage.getItem('corp:quad'); if(pq){ ['obQuadSel','obCQuad'].forEach(function(id){ const el=document.getElementById(id); if(el) el.value=pq; }); } }catch(e){}
+  ov.style.display='block';
+  obStepShow(pn?2:1);
+  try{ const jc=new URLSearchParams(location.search).get('join'); if(jc){ const ji=document.getElementById('obJoinCode'); if(ji) ji.value=jc; obStepShow(2); obTab('join'); obMsg('Invite detected — tap Join with code to enter.'); } }catch(e){}
+}
+function closeOnboard(){ const ov=document.getElementById('onboard'); if(ov) ov.style.display='none'; }
+function obGo(n){
+  if(n===2){ const nm=((document.getElementById('obPilotName')||{}).value||'').trim(); if(!nm){ obMsg('Enter your pilot name first',true); return; } const q=((document.getElementById('obQuadSel')||{}).value)||'abuxey'; try{localStorage.setItem('corp:quad',q);}catch(e){} localStorage.setItem('corp:pilot',JSON.stringify({name:nm})); window.playerQuad=q; const cq=document.getElementById('obCQuad'); if(cq&&!cq.value) cq.value=q; }
+  obStepShow(n);
+}
+function obTab(t){ ['create','join','search'].forEach(function(x){ const p=document.getElementById('obTab'+x.charAt(0).toUpperCase()+x.slice(1)); if(p) p.style.display=x===t?'block':'none'; }); document.querySelectorAll('#obTabs .obtab').forEach(function(bb){ bb.classList.toggle('act', bb.dataset.t===t); }); if(t==='search'){ const el=document.getElementById('obSearchQ'); if(el) el.focus(); } }
+async function obCreateCorp(){ const n=((document.getElementById('obCName')||{}).value||'').trim(); const t=((document.getElementById('obCTag')||{}).value||'').trim(); const q=((document.getElementById('obCQuad')||{}).value)||'abuxey'; if(!n){ obMsg('Corp name required',true); return; } obMsg('Creating…'); await savePilotProfile(((document.getElementById('obPilotName')||{}).value||'Pilot').trim()); const res=await rpc('create_corp',{cname:n,ctag:t||n.slice(0,3).toUpperCase(),cquad:q}); if(res&&res.ok){ closeOnboard(); await afterAuth(); if(typeof logActivity==='function') logActivity('corp','founded the corp'); } else obMsg((res&&res.error)||'Failed to create corp',true); }
+async function obJoinCodeFn(){ const c=((document.getElementById('obJoinCode')||{}).value||'').trim(); if(!c){ obMsg('Enter an invite code',true); return; } obMsg('Joining…'); await savePilotProfile(((document.getElementById('obPilotName')||{}).value||'Pilot').trim()); const res=await rpc('join_corp',{code:c}); if(res&&res.ok){ closeOnboard(); await afterAuth(); if(typeof logActivity==='function') logActivity('join','joined the corp'); } else obMsg((res&&res.error)||'Invalid or expired code',true); }
+let _obSearchT=null;
+function obSearchDebounced(){ clearTimeout(_obSearchT); _obSearchT=setTimeout(obSearch,350); }
+async function obSearch(){
+  const q=((document.getElementById('obSearchQ')||{}).value||'').trim(); const box=document.getElementById('obSearchResults'); if(!box) return;
+  if(q.length<2){ box.innerHTML='<div style="font-size:12px;color:#7d8ba1;padding:6px">Type at least 2 characters…</div>'; return; }
+  box.innerHTML='<div style="font-size:12px;color:#7d8ba1;padding:6px">Searching…</div>';
+  const res=await rpc('search_corps',{q:q});
+  if(!res || res.error || !Array.isArray(res)){ box.innerHTML='<div style="font-size:12.5px;color:#8a94a6;padding:10px;border:1px dashed rgba(96,165,215,.25);border-radius:10px;line-height:1.5">🔎 Corp search is not enabled yet on this network. For now, ask your corp for an <b style="color:#cfeefb">invite code</b>, or create your own corp.</div>'; return; }
+  if(!res.length){ box.innerHTML='<div style="font-size:12.5px;color:#8a94a6;padding:8px">No corps match that. Try another name, or create a new corp.</div>'; return; }
+  box.innerHTML=res.slice(0,12).map(function(c){ return `<div class="obrow"><span style="width:30px;height:30px;border-radius:8px;background:rgba(102,224,250,.08);border:1px solid rgba(102,224,250,.2);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono,monospace);font-size:11px;color:#66e0fa">${esc((c.tag||c.name||'?').slice(0,3).toUpperCase())}</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600;color:#eaf3fb">${esc(c.name||'Corp')}</div><div style="font-family:var(--font-mono,monospace);font-size:10px;color:#7d8ba1">${esc(c.tag||'')}${c.quadrant?' · '+esc(c.quadrant):''}${c.members!=null?' · '+c.members+' members':''}</div></div><button class="btn sec" style="padding:8px 12px;font-size:11px" onclick="obRequestJoin('${c.id}',this)">Request to join</button></div>`; }).join('');
+}
+async function obRequestJoin(corpId,btn){ if(btn){ btn.disabled=true; btn.textContent='…'; } await savePilotProfile(((document.getElementById('obPilotName')||{}).value||'Pilot').trim()); const res=await rpc('request_join',{corp_id:corpId}); if(res&&res.ok){ if(btn) btn.textContent='✓ Requested'; obMsg('Request sent — the corp admin will approve you. You get access once accepted.'); } else { if(btn){ btn.disabled=false; btn.textContent='Request to join'; } obMsg((res&&res.error)||'Join requests are not enabled yet — use an invite code for now.',true); } }
 async function afterAuth(){
   await loadCorpCtx();
-  if(!window.CORP){
-    openAuth(); authShow('authOnboard'); authMsg('');
-    const p=pilotName(); if(p) document.getElementById('obPilot').value=p;
-    if(window.QUADS){ const el=document.getElementById('obQuad'); if(el) el.innerHTML=window.QUADS; }
-    try{ const jc=new URLSearchParams(location.search).get('join'); if(jc){ const ji=document.getElementById('obJoin'); if(ji) ji.value=jc; authMsg('Invite detected — tap “Join with code” to enter the corp.'); } }catch(e){}
-    return;
-  }
-  closeAuth();
+  if(!window.CORP){ openOnboard(); return; }
+  closeAuth(); closeOnboard();
   subscribeActivity();
   if(window.onCorpReady) window.onCorpReady();
 }
@@ -1932,7 +2009,7 @@ async function obJoinFn(){ const c=document.getElementById('obJoin').value.trim(
 async function authLogout(){ await SBC.auth.signOut(); location.reload(); }
 async function authInit(){
   const m=location.hash.match(/error_description=([^&]+)/); if(m){ openAuth(); authMsg(decodeURIComponent(m[1].replace(/\+/g,' ')),true); history.replaceState(null,'',location.pathname); }
-  fetch(window.QUADS_URL||'data/index.json').then(r=>r.json()).then(idx=>{ window.QUADS = idx.map(q=>'<option value="'+q.slug+'">'+q.name+' ('+q.region+')</option>').join(''); const el=document.getElementById('obQuad'); if(el&&!el.innerHTML) el.innerHTML=window.QUADS; }).catch(()=>{});
+  fetch(window.QUADS_URL||'data/index.json').then(r=>r.json()).then(idx=>{ window.QUADS = idx.map(q=>'<option value="'+q.slug+'">'+q.name+' ('+q.region+')</option>').join(''); ['obQuad','obQuadSel','obCQuad'].forEach(function(id){ var el=document.getElementById(id); if(el&&!el.innerHTML) el.innerHTML=window.QUADS; }); }).catch(()=>{});
   const {data:{session}}=await SBC.auth.getSession();
   if(session){ TOKEN=session.access_token; USER=session.user; window.TOKEN=TOKEN; window.USER=USER; await afterAuth(); }
   else if(window.onGuest) window.onGuest();
