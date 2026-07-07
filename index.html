@@ -238,7 +238,7 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
   <span class="ver" id="verInfo"></span>
   <nav id="nav"></nav>
   <a href="map/" style="color:var(--accent2);text-decoration:none;font-size:13px">🗺️ Map</a>
-  <span id="syncState">local only</span>
+  <span id="syncState" title="Not signed in — data is saved only on this device. Sign in to sync with your corp." style="cursor:pointer" onclick="openAuth()">Anonymous · Join Corp</span>
 </header>
 <main>
 
@@ -850,7 +850,7 @@ function init(){
     document.getElementById('landing').style.display='none';
     ensureAdminTab();
     STATE.bases = [];
-    const el=$('#syncState'); el.textContent='['+(window.CORP.tag||'')+'] '+window.CORP.name; el.className='on'; el.onclick=null;
+    const el=$('#syncState'); var _pn=(typeof pilotName==='function'&&pilotName())||'Pilot'; el.textContent='👨‍🚀 '+_pn+' ['+window.CORP.name+']'; el.title='Signed in — synced live with your corp'; el.className='on'; el.style.cursor='default'; el.onclick=null;
     document.getElementById('acctInfo').textContent='Signed in as '+(window.USER?window.USER.email:'?');
     try{ const p=JSON.parse(localStorage.getItem('corp:pilot')||'null'); if(p) document.getElementById('pilotNameSet').value=p.name; }catch(e){}
     renderCorpPanel();
@@ -860,7 +860,7 @@ function init(){
     corpTimer=setInterval(async()=>{ await fetchBases(); await fetchPlan(); render(); }, 30000);
   };
   window.onGuest = ()=>{
-    const el=$('#syncState'); el.textContent='👨‍🚀 Sign in'; el.style.cursor='pointer'; el.onclick=()=>openAuth();
+    const el=$('#syncState'); el.textContent='Anonymous · Join Corp'; el.title='Not signed in — data is saved only on this device. Sign in to sync with your corp.'; el.className=''; el.style.cursor='pointer'; el.onclick=()=>openAuth();
     if(!localStorage.getItem('corphq:explored')) document.getElementById('landing').style.display='block';
     render();
   };
