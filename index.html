@@ -1241,9 +1241,12 @@ function chainFit(){
   cv.querySelectorAll('.cnode').forEach(n=>{ const x=(parseFloat(n.style.left)||0)+(n.offsetWidth||216); const y=(parseFloat(n.style.top)||0)+(n.offsetHeight||70); if(x>maxX)maxX=x; if(y>maxY)maxY=y; });
   if(maxX<=0)maxX=800; if(maxY<=0)maxY=500;
   const pad=48;
-  const sc=Math.min((w.clientWidth-pad)/maxX, (w.clientHeight-pad)/maxY, 1);
+  const bp=document.getElementById('bpanel');
+  const leftInset = (bp && bp.style.display==='block') ? (bp.offsetWidth+28) : 16;
+  const availW = Math.max(200, w.clientWidth - pad - leftInset);
+  const sc=Math.min(availW/maxX, (w.clientHeight-pad)/maxY, 1);
   CHAIN_SCALE=Math.max(0.1,Math.min(2,sc));
-  CHAIN_PANX=Math.max(12,(w.clientWidth - maxX*CHAIN_SCALE)/2);
+  CHAIN_PANX=leftInset + Math.max(0,(availW - maxX*CHAIN_SCALE)/2);
   CHAIN_PANY=Math.max(12,(w.clientHeight - maxY*CHAIN_SCALE)/2);
   applyChainTransform();
 }
@@ -1580,8 +1583,13 @@ function renderChain(){
   const maxD = Math.max(...list.map(n=>n.depth));
   const cols = {};
   for(const n of list){ const c = maxD - n.depth; (cols[c]=cols[c]||[]).push(n); }
-  Object.keys(cols).forEach(c=>cols[c].sort((a,b)=>b.rate-a.rate));
-  const COLW=272, NODEW=216, PAD=30, GAP=18;
+  // order each column by the vertical barycenter of its inputs (left->right) so the
+  // flow reads cleanly and edges rarely cross; leftmost column falls back to rate.
+  const _ckeys = Object.keys(cols).map(Number).sort((a,b)=>a-b);
+  const _oidx = {};
+  const _bary = n=>{ if(!n.recipe) return 1e9; const ins=n.recipe.ingredients.map(g=>_oidx[g.slug]).filter(v=>v!==undefined); return ins.length? ins.reduce((a,b)=>a+b,0)/ins.length : 1e9; };
+  _ckeys.forEach((c,ci)=>{ const arr=cols[c]; if(ci===0){ arr.sort((a,b)=>b.rate-a.rate); } else { arr.sort((a,b)=>{ const d=_bary(a)-_bary(b); return d!==0?d:(b.rate-a.rate); }); } arr.forEach((n,i)=>{ _oidx[n.slug]=i; }); });
+  const COLW=300, NODEW=216, PAD=30, GAP=28;
   const cv = document.getElementById('chainCanvas');
   cv.querySelectorAll('.cnode').forEach(el=>el.remove());
 
