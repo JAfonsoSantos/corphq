@@ -1469,22 +1469,24 @@ function setChainRecipe(slug, rid){ STATE.recipeChoice[slug]=parseInt(rid); pers
 let CHAIN_LAYOUT={}; // slug -> {x,y} overrides for calculated nodes
 let CHAIN_MANUAL=[]; // [{id, slug, x, y, note}] manually added building nodes
 let CHAIN_LINKS=[]; // [{a,b}] manual connections; keys are item slug or 'm:'+id
+let CHAIN_HIDE=[]; // node keys hidden from the chain view (infra or computed)
 let CHAIN_LINKING=null; // node key awaiting a connection target
 function layoutKey(){ return CHAIN_CUR?CHAIN_CUR.slug:'__free__'; }
 function loadLayoutFor(key){
-  CHAIN_LAYOUT={}; CHAIN_MANUAL=[]; CHAIN_LINKS=[];
+  CHAIN_LAYOUT={}; CHAIN_MANUAL=[]; CHAIN_LINKS=[]; CHAIN_HIDE=[];
   const L=STATE.layouts&&STATE.layouts[key]; if(!L) return;
-  if(L.pos||L.manual||L.links){ CHAIN_LAYOUT=JSON.parse(JSON.stringify(L.pos||{})); CHAIN_MANUAL=JSON.parse(JSON.stringify(L.manual||[])); CHAIN_LINKS=JSON.parse(JSON.stringify(L.links||[])); }
+  if(L.pos||L.manual||L.links||L.hide){ CHAIN_LAYOUT=JSON.parse(JSON.stringify(L.pos||{})); CHAIN_MANUAL=JSON.parse(JSON.stringify(L.manual||[])); CHAIN_LINKS=JSON.parse(JSON.stringify(L.links||[])); CHAIN_HIDE=JSON.parse(JSON.stringify(L.hide||[])); }
   else { CHAIN_LAYOUT=JSON.parse(JSON.stringify(L)); } // back-compat: flat pos map
 }
 function saveChainLayout(){
   if(!CHAIN_CUR) return;
   STATE.layouts = STATE.layouts||{};
-  STATE.layouts[layoutKey()] = {pos:JSON.parse(JSON.stringify(CHAIN_LAYOUT)), manual:JSON.parse(JSON.stringify(CHAIN_MANUAL)), links:JSON.parse(JSON.stringify(CHAIN_LINKS))};
+  STATE.layouts[layoutKey()] = {pos:JSON.parse(JSON.stringify(CHAIN_LAYOUT)), manual:JSON.parse(JSON.stringify(CHAIN_MANUAL)), links:JSON.parse(JSON.stringify(CHAIN_LINKS)), hide:JSON.parse(JSON.stringify(CHAIN_HIDE))};
   if(window.CORP){ pushPlan(); logActivity('chain','saved a production chain'+(CHAIN_CUR?(' for '+itemName(CHAIN_CUR.slug)):'')); }
   const b=event&&event.target; if(b){ const t=b.textContent; b.textContent='✓ saved'; setTimeout(()=>b.textContent=t,1500); }
 }
-function resetChainLayout(){ CHAIN_LAYOUT={}; CHAIN_MANUAL=[]; CHAIN_LINKS=[]; CHAIN_LINKING=null; if(STATE.layouts) delete STATE.layouts[layoutKey()]; if(window.CORP) pushPlan(); renderChain(); chainFit(); }
+function chainHideNode(key){ if(CHAIN_HIDE.indexOf(key)<0) CHAIN_HIDE.push(key); if(CHAIN_CUR){ STATE.layouts=STATE.layouts||{}; STATE.layouts[layoutKey()]={pos:JSON.parse(JSON.stringify(CHAIN_LAYOUT)),manual:JSON.parse(JSON.stringify(CHAIN_MANUAL)),links:JSON.parse(JSON.stringify(CHAIN_LINKS)),hide:JSON.parse(JSON.stringify(CHAIN_HIDE))}; if(window.CORP&&typeof pushPlan==='function') pushPlan(); } if(typeof closeInspector==='function') closeInspector(); renderChain(); }
+function resetChainLayout(){ CHAIN_LAYOUT={}; CHAIN_MANUAL=[]; CHAIN_LINKS=[]; CHAIN_HIDE=[]; CHAIN_LINKING=null; if(STATE.layouts) delete STATE.layouts[layoutKey()]; if(window.CORP) pushPlan(); renderChain(); chainFit(); }
 /* ---- manual building nodes ---- */
 function toggleBPanel(){ const p=document.getElementById('bpanel'); const open = p.style.display!=='block'; p.style.display = open?'block':'none'; const btn=document.querySelector('button[onclick="toggleBPanel()"]'); if(btn) btn.classList.toggle('act', open); if(open){ renderBPanel(); bindPalette(); } }
 function closeBPanel(){ const p=document.getElementById('bpanel'); if(p) p.style.display='none'; const btn=document.querySelector('button[onclick="toggleBPanel()"]'); if(btn) btn.classList.remove('act'); }
@@ -1627,6 +1629,19 @@ function openInspector(key){
   var el=document.getElementById('chainInspector'); if(!el||!key) return;
   document.querySelectorAll('.cnode.inspected').forEach(function(x){x.classList.remove('inspected');});
   window.__inspectKey=key; var body='', selEl=null;
+  if(key.indexOf('infra:')===0){
+    var _kind = key.indexOf('infra:base:')===0 ? 'base':'mine';
+    var _bid = _kind==='base' ? key.slice('infra:base:'.length) : key.slice('infra:mine:'.length).split('::')[0];
+    var _b=(STATE.bases||[]).find(function(x){return x.id===_bid||x.name===_bid;});
+    var _title=_b?_b.name:'Base';
+    var _h='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-family:var(--font-mono);font-size:9px;letter-spacing:.16em;color:#66e0fa">◍ '+(_kind==='mine'?'MINING NODE':'CORP BASE')+'</span><span onclick="closeInspector()" style="cursor:pointer;color:#9fb0c4;font-size:14px">✕</span></div>';
+    var _bd='<div style="font-family:var(--font-display);font-weight:600;color:#fff;font-size:15px">'+(_kind==='mine'?'⛏ ':'🏠 ')+esc(_title)+'</div>';
+    if(_kind==='mine'){ var _slug=key.slice('infra:mine:'.length).split('::')[1]; _bd+='<div style="margin-top:8px;font-size:12px;color:#c7d4e2">Extracts <b style="color:#eaf3fb">'+esc(itemName(_slug))+'</b></div>'; }
+    _bd+='<div style="display:flex;gap:7px;margin-top:16px">'+(_b?'<button class="ib" onclick="closeInspector();App.editBase(&quot;'+_b.id+'&quot;)">✎ Edit base</button>':'')+'<button class="ib del" onclick="chainHideNode(&quot;'+key+'&quot;)">🗑 Remove from chain</button></div>';
+    el.innerHTML=_h+_bd; el.style.display='block';
+    var _se=document.querySelector('.cnode[data-cslug="'+key+'"]'); if(_se){ document.querySelectorAll('.cnode.inspected').forEach(function(x){x.classList.remove('inspected');}); _se.classList.add('inspected'); }
+    return;
+  }
   if(key.indexOf('m:')===0){
     var m=CHAIN_MANUAL.find(function(x){return x.id===key.slice(2);}); if(!m){ closeInspector(); return; }
     var bd=BLD[m.slug]||{};
@@ -1733,7 +1748,7 @@ window.manualSetSel=function(id,val){ const m=CHAIN_MANUAL.find(x=>x.id===id); i
 function chainRedrawEdges(){
   if(!window.__chainEdges||!window.__chainPos) return;
   const NODEW=216; let svg='';
-  for(const e of window.__chainEdges){ const a=window.__chainPos[e.from], b=window.__chainPos[e.to]; if(!a||!b||a.h==null||b.h==null) continue; const x1=a.x+NODEW,y1=a.y+a.h/2,x2=b.x,y2=b.y+b.h/2,mx=(x1+x2)/2; svg+=`<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" fill="none" stroke="#3b4a6b" stroke-width="1.6"/><rect x="${mx-26}" y="${(y1+y2)/2-9}" width="52" height="16" rx="8" fill="#1b2740" stroke="#2e3f63"/><text x="${mx}" y="${(y1+y2)/2+3}" text-anchor="middle" fill="#9fc3ff" font-size="10">${fmt(e.rate)}/h</text>`; }
+  for(const e of window.__chainEdges){ const a=window.__chainPos[e.from], b=window.__chainPos[e.to]; if(!a||!b||a.h==null||b.h==null) continue; const x1=a.x+NODEW,y1=a.y+a.h/2,x2=b.x,y2=b.y+b.h/2,mx=(x1+x2)/2; const _st=e.infra?(e.color||'#5eb2ff'):'#3b4a6b'; svg+=`<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" fill="none" stroke="${_st}" stroke-width="1.6"/>`; if(!e.noLabel){ svg+=`<rect x="${mx-26}" y="${(y1+y2)/2-9}" width="52" height="16" rx="8" fill="#1b2740" stroke="#2e3f63"/><text x="${mx}" y="${(y1+y2)/2+3}" text-anchor="middle" fill="#9fc3ff" font-size="10">${fmt(e.rate)}/h</text>`; } }
   // manual links — smart: green if output feeds input, red if mismatch, grey if unset
   for(const l of (CHAIN_LINKS||[])){ const a=window.__chainPos[l.a], b=window.__chainPos[l.b]; if(!a||!b||a.h==null||b.h==null) continue;
     const meta=linkMeta(l.a,l.b);
@@ -1744,7 +1759,7 @@ function chainRedrawEdges(){
     const lw = Math.max(52, label.length*6+14);
     svg+=`<rect x="${mx-lw/2}" y="${(y1+y2)/2-9}" width="${lw}" height="16" rx="8" fill="${meta.valid?'#12351f':(meta.unset?'#1b2740':'#3a1414')}" stroke="${color}"/><text x="${mx}" y="${(y1+y2)/2+3}" text-anchor="middle" fill="${color}" font-size="10">${label}</text>`;
   }
-  const sv=document.getElementById('chainSvg'); if(sv) sv.innerHTML=(window.__infraSvg||'')+svg;
+  const sv=document.getElementById('chainSvg'); if(sv) sv.innerHTML=svg;
 }
 const CHAIN_SEL=new Set();
 function chainClearSel(){ CHAIN_SEL.clear(); document.querySelectorAll('.cnode.sel').forEach(n=>n.classList.remove('sel')); }
@@ -1909,14 +1924,16 @@ function renderChain(){
   const W = PAD*2 + (maxD+1+INFRA_COLS)*COLW;
   cv.style.width=W+'px'; cv.style.height=H+'px';
 
-  // ---- corp infrastructure prefix: Base -> Mining node -> extractor(raw) ----
-  let infraSvg='';
+  // ---- corp infrastructure prefix: Base -> Mining node -> extractor(raw) — first-class draggable/selectable/hideable nodes ----
+  window.__infraEdges=[];
   if(INFRA_COLS){
-    const MH=66, MGAP=12, BH=50;
+    const MH=66, MGAP=12, BH=52;
+    const HIDE=CHAIN_HIDE||[];
+    const bId=function(name){ var b=(STATE.bases||[]).find(function(x){return x.name===name;}); return b?b.id:name; };
     let infraHtml=''; const baseAgg={};
     for(const n of _minedRaws){
       const rp=pos[n.slug]; if(!rp||rp.x==null) continue;
-      const srcs=n.corpSources||[];
+      const srcs=(n.corpSources||[]).filter(function(sc){ return HIDE.indexOf('infra:mine:'+bId(sc.base)+'::'+n.slug)<0; });
       const stackH = srcs.length*MH + Math.max(0,srcs.length-1)*MGAP;
       const rcy = (rp.y!=null?rp.y:PAD) + ((rp.h||90)/2);
       let my = rcy - stackH/2;
@@ -1927,23 +1944,30 @@ function renderChain(){
         const _label = dep?dep.name:itemName(n.slug);
         const _rate = dep?dep.rate:(sc.rate||0);
         const _nx = dep?dep.n:1;
-        infraHtml += '<div class="cnode infra mine" data-infra="mine" style="left:'+mineX+'px;top:'+my+'px;visibility:visible;border-left:4px solid '+color+'">'
+        const mkey='infra:mine:'+bId(sc.base)+'::'+n.slug;
+        var mx0=mineX, my0=my; const ov=CHAIN_LAYOUT[mkey]; if(ov){ mx0=ov.x; my0=ov.y; }
+        infraHtml += '<div class="cnode infra mine" data-cslug="'+mkey+'" style="left:'+mx0+'px;top:'+my0+'px;visibility:visible;border-left:4px solid '+color+'">'
+          +'<div class="nodeacts"><span class="nact" title="Remove from chain" onclick="event.stopPropagation();chainHideNode(&quot;'+mkey+'&quot;)">✕</span></div>'
           +'<div class="nm" style="font-size:12px">⛏ '+esc(_label)+'</div>'
           +'<div class="meta">'+fmt(_rate)+'/h · '+_nx+'× '+esc(wsName("b-extractor"))+'</div>'
           +'<div class="meta" style="color:'+color+'">🏠 '+esc(sc.base)+'</div></div>';
-        const x1=mineX+NODEW, y1=my+MH/2, x2=rp.x, y2=rcy, mx=(x1+x2)/2;
-        infraSvg += '<path d="M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2+'" fill="none" stroke="'+color+'" stroke-width="1.8"/>';
-        (baseAgg[sc.base]=baseAgg[sc.base]||{pts:[],color:color}).pts.push({y:my+MH/2, x:mineX});
+        pos[mkey]={x:mx0,y:my0,h:MH};
+        window.__infraEdges.push({from:mkey,to:n.slug,rate:_rate,infra:true,color:color});
+        (baseAgg[sc.base]=baseAgg[sc.base]||{pts:[],color:color,id:bId(sc.base)}).pts.push({key:mkey,rate:_rate});
         my += MH+MGAP;
       });
     }
     Object.keys(baseAgg).forEach(function(bn){
-      const info=baseAgg[bn]; const ys=info.pts.map(o=>o.y); const avgY=ys.reduce((a,b)=>a+b,0)/ys.length;
-      const bx=PAD, by=avgY-BH/2;
-      infraHtml += '<div class="cnode infra base" data-infra="base" style="left:'+bx+'px;top:'+by+'px;visibility:visible;border-left:4px solid '+info.color+'">'
+      const info=baseAgg[bn]; const bkey='infra:base:'+info.id; if(HIDE.indexOf(bkey)>=0) return;
+      const ys=info.pts.map(function(o){ var p=pos[o.key]; return p?p.y+(p.h||MH)/2:0; });
+      var avgY=ys.length?ys.reduce((a,b)=>a+b,0)/ys.length:PAD;
+      var bx=PAD, by=avgY-BH/2; const ov=CHAIN_LAYOUT[bkey]; if(ov){ bx=ov.x; by=ov.y; }
+      infraHtml += '<div class="cnode infra base" data-cslug="'+bkey+'" style="left:'+bx+'px;top:'+by+'px;visibility:visible;border-left:4px solid '+info.color+'">'
+        +'<div class="nodeacts"><span class="nact" title="Remove from chain" onclick="event.stopPropagation();chainHideNode(&quot;'+bkey+'&quot;)">✕</span></div>'
         +'<div class="nm" style="font-size:13px;color:'+info.color+'">🏠 '+esc(bn)+'</div>'
         +'<div class="meta">'+info.pts.length+' mining node'+(info.pts.length>1?'s':'')+'</div></div>';
-      info.pts.forEach(function(o){ const x1=bx+NODEW, y1=avgY, x2=o.x, y2=o.y, mx=(x1+x2)/2; infraSvg += '<path d="M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2+'" fill="none" stroke="'+info.color+'" stroke-width="1.5" stroke-dasharray="2 3" opacity="0.85"/>'; });
+      pos[bkey]={x:bx,y:by,h:BH};
+      info.pts.forEach(function(o){ window.__infraEdges.push({from:bkey,to:o.key,rate:o.rate,infra:true,color:info.color,noLabel:true}); });
     });
     if(infraHtml) cv.insertAdjacentHTML('beforeend', infraHtml);
   }
@@ -1963,11 +1987,11 @@ function renderChain(){
   }
   window.__shuttleLinks=shuttleLinks;
   CHAIN_DIM={W,H};
-  window.__chainPos=pos; window.__chainEdges=Object.values(edges); window.__chainNodes=nodes; if(window.__inspectKey){ setTimeout(function(){ var ip=document.getElementById("chainInspector"); if(ip&&ip.style.display==="block"){ try{openInspector(window.__inspectKey);}catch(e){} } },0); }
+  window.__chainPos=pos; window.__chainEdges=Object.values(edges).concat(window.__infraEdges||[]); window.__chainNodes=nodes; if(window.__inspectKey){ setTimeout(function(){ var ip=document.getElementById("chainInspector"); if(ip&&ip.style.display==="block"){ try{openInspector(window.__inspectKey);}catch(e){} } },0); }
   { const eh=document.getElementById('chainEmptyHint'); if(eh) eh.style.display='none'; }
   const sv=document.getElementById('chainSvg');
-  window.__infraSvg=infraSvg; sv.setAttribute('width',W); sv.setAttribute('height',H); sv.innerHTML=infraSvg+svg;
-  cv.querySelectorAll('.cnode').forEach(el=>{ const sl=el.getAttribute('data-cslug'); if(sl){ makeNodeDraggable(el, sl); addLinkHandles(el, sl); } });
+  sv.setAttribute('width',W); sv.setAttribute('height',H); sv.innerHTML=svg;
+  cv.querySelectorAll('.cnode').forEach(el=>{ const sl=el.getAttribute('data-cslug'); if(sl){ makeNodeDraggable(el, sl); if(sl.indexOf('infra:')!==0) addLinkHandles(el, sl); } });
   renderManualNodes(cv);
   chainRedrawEdges();
   bindChainCanvas();
