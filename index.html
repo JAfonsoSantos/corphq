@@ -2231,6 +2231,7 @@ async function authInit(){
   // preview/test the onboarding stepper anytime: corphq.space/?onboarding
   try{ if(/onboarding/i.test(location.search+location.hash)){ setTimeout(function(){ if(window.openOnboard) openOnboard(); }, 400); } }catch(e){}
   try{ if(/[?&]picked=1/.test(location.search)){ history.replaceState(null,'',location.pathname); setTimeout(function(){ if(App&&App.restoreDraftFromMap) App.restoreDraftFromMap(); }, 500); } }catch(e){}
+  try{ var _dtab=new URLSearchParams(location.search).get('tab'); if(_dtab){ setTimeout(function(){ try{ if(window.landingExplore) landingExplore(); if(window.App&&App.show) App.show(_dtab); }catch(e){} }, 350); } }catch(e){}
   SBC.auth.onAuthStateChange((ev,s)=>{ if(s){TOKEN=s.access_token; USER=s.user; window.TOKEN=TOKEN; window.USER=USER;} });
 }
 authInit();

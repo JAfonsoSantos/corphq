@@ -118,10 +118,36 @@ select,input{background:rgba(6,14,26,.7) !important;border:1px solid rgba(96,165
 #legend .leg-eyebrow{font-family:"Roboto Mono",monospace;font-size:9px;letter-spacing:.14em;color:#66e0fa;margin-bottom:8px;display:block}
 #legend{font-family:"Roboto Mono",monospace !important}
 </style>
+<style id="railStyle">
+#hudRail{position:fixed;left:0;top:0;bottom:0;width:88px;z-index:60;background:linear-gradient(180deg,rgba(6,16,30,.96),rgba(4,9,18,.96));border-right:1px solid rgba(96,165,215,.16);display:flex;flex-direction:column;align-items:center;padding:16px 0 18px;gap:16px;overflow-y:auto}
+#hudRail .hud-logo{width:42px;height:42px;border-radius:12px;flex-shrink:0;background:linear-gradient(150deg,#fd563c,#c6280f);display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(253,86,60,.5);cursor:pointer}
+#hudRail .hud-logo i{font-size:23px;color:#fff}
+#hudRail .hud-navlist{display:flex;flex-direction:column;gap:5px;width:100%;align-items:center}
+#hudRail .hud-navitem{width:72px;padding:9px 0 7px;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;color:#7d8ba1;border:1px solid transparent;text-decoration:none;transition:.15s}
+#hudRail .hud-navitem i{font-size:20px}
+#hudRail .hud-navitem span{font-family:"Roboto Mono",monospace;font-size:8.5px;letter-spacing:.04em;text-transform:uppercase;text-align:center;line-height:1.1}
+#hudRail .hud-navitem:hover{background:rgba(102,224,250,.08);color:#cfeefb}
+#hudRail .hud-navitem.active{color:#cfeefb;background:rgba(102,224,250,.1);border-color:rgba(102,224,250,.35)}
+#hudRail .hud-radar{margin-top:auto;margin-bottom:2px;width:38px;height:38px;border-radius:50%;border:1px solid rgba(102,224,250,.3);display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0}
+#hudRail .hud-radar::before{content:"";position:absolute;inset:-1px;border-radius:50%;border-top:1px solid #66e0fa;animation:hud-sweep 3.5s linear infinite}
+#hudRail .hud-radar i{font-size:18px;color:#66e0fa}
+@keyframes hud-sweep{to{transform:rotate(360deg)}}
+#hudRail .hud-signout{width:72px;padding:9px 0 7px;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;color:#7d8ba1;border:1px solid transparent;text-decoration:none;transition:.15s;flex-shrink:0}
+#hudRail .hud-signout i{font-size:20px}
+#hudRail .hud-signout span{font-family:"Roboto Mono",monospace;font-size:8.5px;letter-spacing:.04em;text-transform:uppercase}
+#hudRail .hud-signout:hover{background:rgba(253,86,60,.12);color:#ff9a88;border-color:rgba(253,86,60,.35)}
+#top{left:88px}
+#top .cmdpill{font-family:"Roboto Mono",monospace;font-size:9px;letter-spacing:.14em;color:#66e0fa;border:1px solid rgba(102,224,250,.3);border-radius:5px;padding:2px 6px;white-space:nowrap}
+#legend{left:100px}
+#backBtn{left:100px !important}
+#pickBar{left:88px !important}
+#resPanel{left:88px}
+@media(max-width:820px){ #top{left:0} #legend{left:12px} #backBtn{left:12px !important} #pickBar{left:0 !important} #resPanel{left:0} #hudRail{display:none} }
+</style>
 </head>
 <body>
 <div id="top">
-  <div class="mtitle"><span class="mlogo"><i class="ph-fill ph-shooting-star"></i></span><span class="mword">CorpHQ Map</span></div>
+  <div class="mtitle"><span class="mword">CorpHQ</span><span class="cmdpill">FLEET&nbsp;CMD</span></div>
   <div class="mpill"><i class="ph-fill ph-globe"></i><select id="quadSel"></select></div>
   <div class="mpill"><i class="ph-fill ph-magnifying-glass"></i><input id="sysSearch" placeholder="Find system…" list="sysList"><datalist id="sysList"></datalist></div>
   <button class="mbtn" onclick="toggleRes()"><i class="ph-fill ph-funnel"></i>Resources</button>
@@ -129,7 +155,6 @@ select,input{background:rgba(6,14,26,.7) !important;border:1px solid rgba(96,165
   <span class="mmeta" id="quadInfo"></span>
   <span style="flex:1"></span>
   <span class="mmeta" id="pilotChip" style="cursor:pointer" onclick="changePilot()" title="change pilot name"></span>
-  <a class="mback" href="../">← CorpHQ</a>
 </div>
 <div id="pickBar" style="display:none;position:fixed;top:56px;left:0;right:0;z-index:50;background:linear-gradient(90deg,rgba(95,233,206,.16),rgba(102,224,250,.16));border-bottom:1px solid rgba(95,233,206,.4);color:#dff7ef;font:600 13px/1.3 system-ui;padding:9px 16px;display:none;align-items:center;gap:12px"><i class="ph-fill ph-map-pin-line" style="color:#5fe9ce;font-size:16px"></i><span>Pick a location for your base — open a system or planet, then tap <b>Use this location</b>.</span><span style="flex:1"></span><a href="../?picked=1" style="color:#9fb0c4;text-decoration:none;font-weight:600">Cancel ✕</a></div>
 <div id="resPanel"></div>
@@ -161,7 +186,7 @@ let G=null, corpState=null, view={x:0,y:0,k:1}, mode='galaxy', curSys=null;
 let hoverSys=null, hoverPlanet=null, pinned=null; // pinned = {type:'system'|'planet', sys, planet}
 let resFilter=null, route={a:null,b:null,path:null,cost:0};
 const cv=$('#cv'), ctx=cv.getContext('2d');
-function resize(){ cv.width=innerWidth; cv.height=innerHeight-56; cv.style.marginTop='56px'; draw(); }
+function resize(){ var rw=innerWidth>820?88:0; cv.width=innerWidth-rw; cv.height=innerHeight-56; cv.style.marginTop='56px'; cv.style.marginLeft=rw+'px'; draw(); }
 addEventListener('resize',resize);
 
 /* ---------- data ---------- */
@@ -402,10 +427,8 @@ function showSystemCard(s, px, py, pin){
   const star=STARC[s.star]||'#5aa9e6';
   const _hereSys = pin ? basesHere(s, null) : [];
   const actions = pin?`<div class="actions">
-      ${window.PICK_MODE?`<button class="btn warn" style="width:100%;margin-bottom:6px" onclick="usePick('${s.id}',null)"><i class="ph-fill ph-map-pin-line"></i> Use this location (${esc(s.name)})</button>`:''}
-      <button class="btn" onclick="enterSystem('${s.id}')">👁 View planets</button>
+      <button class="btn warn" style="width:100%" onclick="enterSystem('${s.id}')">🪐 View planets — pick one to ${window.PICK_MODE?'use':'build a base'}</button>
       ${_hereSys.length?`<button class="btn" onclick="viewBaseModal('${s.id}','null')">🏠 See base${_hereSys.length>1?'s':''} (${_hereSys.length})</button>`:''}
-      <button class="btn warn" onclick="openBaseModal('${s.id}',null)">🏠 ${_hereSys.length?'Build another':'Make base'}</button>
       <button class="btn sec" onclick="setRoute('a','${s.id}')">Route A</button>
       <button class="btn sec" onclick="setRoute('b','${s.id}')">Route B</button>
     </div>`:`<div class="actions muted" style="border:none;padding:6px 12px">click system for actions</div>`;
@@ -420,9 +443,12 @@ function showPlanetCard(s, p, px, py, pin){
   const t=TEMPS[p.temp];
   const pname=s.name+' '+(ROMAN[p.i]||p.i+1);
   const _here = pin ? basesHere(s, p.i) : [];
-  const actions = pin ? `<div class="actions">${window.PICK_MODE?`<button class="btn warn" style="width:100%;margin-bottom:6px" onclick="usePick('${s.id}',${p.i})"><i class="ph-fill ph-map-pin-line"></i> Use this location (${esc(pname)})</button>`:''}${ _here.length
-      ? `<button class="btn" onclick="viewBaseModal('${s.id}',${p.i})">👁 See base${_here.length>1?'s':''} (${_here.length})</button><button class="btn warn" onclick="openBaseModal('${s.id}',${p.i})">🏠 Build another</button>`
-      : `<button class="btn warn" onclick="openBaseModal('${s.id}',${p.i})">🏠 Make base here</button>` }</div>` : '';
+  const actions = pin ? `<div class="actions">${window.PICK_MODE
+      ? `<button class="btn warn" style="width:100%" onclick="usePick('${s.id}',${p.i})"><i class="ph-fill ph-map-pin-line"></i> Use this location (${esc(pname)})</button>`+(_here.length?`<button class="btn sec" onclick="viewBaseModal('${s.id}',${p.i})">👁 See base${_here.length>1?'s':''} (${_here.length})</button>`:'')
+      : (_here.length
+          ? `<button class="btn" onclick="viewBaseModal('${s.id}',${p.i})">👁 See base${_here.length>1?'s':''} (${_here.length})</button><button class="btn warn" onclick="openBaseModal('${s.id}',${p.i})">🏠 Build another here</button>`
+          : `<button class="btn warn" style="width:100%" onclick="openBaseModal('${s.id}',${p.i})">🏠 Make base here</button>`)
+    }</div>` : '';
   const rows=(arr,title)=>`<div class="grp">${title}</div>`+resRows((arr||[]).slice().sort((a,b)=>(b.d||0)-(a.d||0)).map(r=>[r.id, r.d!=null?r.d:('x'+(r.n||1))]), title.toLowerCase());
   $('#card').innerHTML=`<div class="hd">${t?`<span class="temp" style="color:${t[1]}">${t[0]}</span>`:''}<span class="sect">${esc(s.sector)} [${s.level}]</span>
       <div class="nm">${esc(pname)}</div></div>
@@ -697,5 +723,16 @@ function crBugNote(t,bad){var e=document.getElementById('crBugNote');if(e){e.tex
 function crBugPreview(){var f=document.getElementById('crBugImg').files[0];if(!f){_crBugImg=null;document.getElementById('crBugThumb').innerHTML='';return;}var rd=new FileReader();rd.onload=function(ev){var img=new Image();img.onload=function(){var max=1200,w=img.width,h=img.height;if(w>max||h>max){var r=Math.min(max/w,max/h);w=Math.round(w*r);h=Math.round(h*r);}var c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);_crBugImg=c.toDataURL('image/jpeg',0.72);document.getElementById('crBugThumb').innerHTML='<img src="'+_crBugImg+'" style="max-width:100%;border-radius:8px;margin-top:8px;border:1px solid rgba(96,165,215,.2)">';};img.src=ev.target.result;};rd.readAsDataURL(f);}
 async function crBugSend(){var msg=(document.getElementById('crBugMsg').value||'').trim();if(!msg&&!_crBugImg){crBugNote('Write something or attach a picture first.',true);return;}var btn=document.getElementById('crBugSend');btn.disabled=true;btn.textContent='Sending…';var res=null;try{res=await rpc('submit_feedback',{msg:msg,img:_crBugImg,page:'map'+location.hash});}catch(e){}if(res&&res.ok){document.getElementById('crBugMsg').value='';_crBugImg=null;document.getElementById('crBugThumb').innerHTML='';var fi=document.getElementById('crBugImg');if(fi)fi.value='';crBugNote('✓ Thanks! Sent to the team.');setTimeout(crBugClose,1500);}else{crBugNote('Could not send yet — try again in a moment.',true);}btn.disabled=false;btn.textContent='Send feedback';}
 </script>
+<script>(function(){
+  var ICON={dashboard:'squares-four',bases:'planet',planner:'flask',chain:'flow-arrow',profit:'trend-up',market:'currency-circle-dollar',database:'database',settings:'gear-six',calc:'calculator'};
+  var TABS=[['dashboard','Dashboard'],['bases','Bases'],['planner','Crafting'],['chain','Chain'],['profit','Profit'],['market','Market'],['database','Database'],['calc','Calc'],['settings','Settings']];
+  var rail=document.createElement('nav'); rail.id='hudRail';
+  var items=TABS.map(function(t){return '<a class="hud-navitem" href="../?tab='+t[0]+'"><i class="ph-fill ph-'+(ICON[t[0]]||'circle')+'"></i><span>'+t[1]+'</span></a>';}).join('');
+  items+='<a class="hud-navitem active" href="javascript:void(0)"><i class="ph-fill ph-map-trifold"></i><span>Map</span></a>';
+  rail.innerHTML='<div class="hud-logo" title="CorpHQ home" onclick="location.href=\'../\'"><i class="ph-fill ph-shooting-star"></i></div><div class="hud-navlist">'+items+'</div><div class="hud-radar"><i class="ph-fill ph-broadcast"></i></div><a class="hud-signout" href="javascript:void(0)" title="Sign out"><i class="ph-fill ph-sign-out"></i><span>Exit</span></a>';
+  document.body.appendChild(rail);
+  rail.querySelector('.hud-signout').onclick=function(){ try{ Object.keys(localStorage).forEach(function(k){ if(/^sb-.*auth-token$/.test(k)||k.indexOf('supabase.auth')===0) localStorage.removeItem(k); }); }catch(e){} location.href='../?out='+Date.now(); };
+  try{ var authed=Object.keys(localStorage).some(function(k){return /^sb-.*auth-token$/.test(k);}); if(!authed){ var so=rail.querySelector('.hud-signout'); if(so) so.style.display='none'; } }catch(e){}
+})();</script>
 </body>
 </html>
