@@ -1580,9 +1580,21 @@ function renderChain(){
   window.CHAIN_REAL = _realOn ? realisticRescale(nodes, edges, CHAIN_CUR.rate) : {applied:false};
   { const ru=document.getElementById('chainRateUnit'); if(ru) ru.textContent=_realOn?'units (goal)':'/hour'; }
   const list = Object.values(nodes);
-  const maxD = Math.max(...list.map(n=>n.depth));
+  // COLUMN = production tier = longest path from a raw/extractor.
+  // extractors -> col 0; things made directly from them -> col 1; made from those -> col 2; etc.
+  const rankMemo={};
+  const rankOf=(slug,guard)=>{
+    if(rankMemo[slug]!==undefined) return rankMemo[slug];
+    const nd=nodes[slug]; if(!nd) return 0;
+    guard=guard||new Set(); if(guard.has(slug)) return 0;
+    if(!nd.recipe || nd.raw){ rankMemo[slug]=0; return 0; }
+    guard.add(slug); let mx=0;
+    for(const g of nd.recipe.ingredients){ if(nodes[g.slug]){ const r=rankOf(g.slug,guard)+1; if(r>mx)mx=r; } }
+    guard.delete(slug); rankMemo[slug]=mx; return mx;
+  };
   const cols = {};
-  for(const n of list){ const c = maxD - n.depth; (cols[c]=cols[c]||[]).push(n); }
+  for(const n of list){ const c = rankOf(n.slug); n._col=c; (cols[c]=cols[c]||[]).push(n); }
+  const maxD = Math.max(0, ...Object.keys(cols).map(Number));
   // order each column by the vertical barycenter of its inputs (left->right) so the
   // flow reads cleanly and edges rarely cross; leftmost column falls back to rate.
   const _ckeys = Object.keys(cols).map(Number).sort((a,b)=>a-b);
