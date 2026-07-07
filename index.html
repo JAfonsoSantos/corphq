@@ -958,10 +958,12 @@ function renderCorpPanel(){
      <p class="muted small">Send the link — new pilots land on the join screen with the code already filled in. One corp per pilot.</p>
      <div class="grp muted" style="margin-top:10px;font-size:11px;letter-spacing:1px">CREW (${window.MEMBERS.length})</div>
      <div class="flexwrap">${window.MEMBERS.map(m=>{const admin=m.role==='owner';return `<span class="chip crewchip"><span class="rolebadge ${admin?'admin':'pilot'}">${admin?'ADMIN':'PILOT'}</span>${esc(m.pilot||'pilot')}</span>`;}).join('')}</div>
+     ${(window.ROLE==='owner'||window.ROLE==='admin')?'<div class="grp muted" style="margin-top:14px;font-size:11px;letter-spacing:1px">◍ JOIN REQUESTS</div><div id="joinReqBox" class="muted small">Loading…</div>':''}
      <div class="grp muted" style="margin-top:14px;font-size:11px;letter-spacing:1px">◍ CORP ACTIVITY</div>
      <div id="activityFeed" class="muted small">Loading…</div>
      <div class="row" style="margin-top:12px"><button class="btn danger" onclick="App.leaveCorp()">Leave corp</button></div>`;
   renderActivity();
+  if(window.ROLE==='owner'||window.ROLE==='admin') renderJoinRequests();
 }
 App.leaveCorp = async function(){
   if(!confirm('Leave '+window.CORP.name+'? Your corp data stays with the corp.')) return;
@@ -1958,6 +1960,14 @@ function initCalc(){ const sel=document.getElementById('calcRes'); if(!sel||sel.
 window.initCalc=initCalc;
 function computeDeposit(){ const sel=document.getElementById('calcRes'), out=document.getElementById('calcOut'); if(!sel||!out)return; const r=RES[sel.value]; if(!r){out.innerHTML='';return;} const n=Math.max(1,parseInt((document.getElementById('calcCount')||{}).value)||1); const up=Math.max(1,Math.min(100,parseInt((document.getElementById('calcUptime')||{}).value)||100))/100; const drops=(r.drops||[]).map(d=>{ const base=parseFloat(String(d.rate))||0; return {slug:d.slug, base, total:base*n*up}; }); const tot=drops.reduce((a,d)=>a+d.total,0); out.innerHTML=`<div class="csum" style="margin-top:0"><span>⛏ <b>${n}</b> extractor${n>1?'s':''}</span><span>⏱ <b>${Math.round(up*100)}%</b> uptime</span><span>⚙ base <b>${fmt(baseRate)}</b>/h</span><span>Σ <b>${fmt(tot)}</b>/h total</span></div><table class="dtable" style="margin-top:12px"><thead><tr><th>Drop</th><th class="right">Drop chance</th><th class="right">Per extractor /h</th><th class="right">Total /h</th></tr></thead><tbody>`+drops.map(d=>`<tr><td>${itemCell(d.slug)}</td><td class="right val-dim">${d.isPct?fmt(d.chance)+'%':'—'}</td><td class="right val-dim">${fmt(d.per)}</td><td class="right val-avg big">${fmt(d.total)}</td></tr>`).join('')+`</tbody></table>`; }
 window.computeDeposit=computeDeposit;
+async function renderJoinRequests(){
+  const box=document.getElementById('joinReqBox'); if(!box) return;
+  const rows=await rpc('list_join_requests');
+  if(!Array.isArray(rows) || !rows.length){ box.innerHTML='<span class="muted small">No pending requests.</span>'; return; }
+  box.innerHTML=rows.map(function(r){ return `<div class="actrow"><span class="acti">🙋</span><div class="actbody"><b>${esc(r.pilot||'pilot')}</b> wants to join</div><span style="display:flex;gap:6px"><button class="btn sec" style="padding:5px 10px;font-size:11px" onclick="approveJoinReq('${r.id}')">✓ Approve</button><button class="btn danger" style="padding:5px 10px;font-size:11px" onclick="rejectJoinReq('${r.id}')">✕</button></span></div>`; }).join('');
+}
+async function approveJoinReq(id){ const res=await rpc('approve_join',{req_id:id}); if(res&&res.ok){ if(typeof notify==='function') notify('✓ Pilot approved'); if(typeof logActivity==='function') logActivity('join','approved a new pilot'); renderJoinRequests(); } else alert((res&&res.error)||'Failed to approve'); }
+async function rejectJoinReq(id){ const res=await rpc('reject_join',{req_id:id}); if(res&&res.ok){ renderJoinRequests(); } else alert((res&&res.error)||'Failed'); }
 async function renderActivity(){ const el=document.getElementById('activityFeed'); if(!el)return; const rows=await fetchActivity(); el.innerHTML = rows.length? rows.map(a=>`<div class="actrow"><span class="acti">${ACT_ICON[a.action]||'•'}</span><div class="actbody"><b>${esc(a.actor||'pilot')}</b> ${esc(a.detail||a.action)}</div><span class="actwhen">${timeAgo(a.created_at)}</span></div>`).join('') : '<div class="muted small">No activity yet — add a base or plan a chain and your crew will see it here live.</div>'; }
 setInterval(function(){ try{ if(window.CORP){ var t=document.getElementById('tab-settings'); if(t&&t.classList.contains('active')&&document.getElementById('activityFeed')) renderActivity(); } }catch(e){} }, 8000);
 let ACT_CHANNEL=null;
