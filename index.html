@@ -310,13 +310,14 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
     <div class="row">
       <input id="chainItem" class="searchbox" placeholder="Target item…" list="itemDatalist">
       <input id="chainRate" type="number" min="1" value="60" style="width:90px" title="items per hour">
-      <span class="muted">/hour</span>
+      <span class="muted" id="chainRateUnit">/hour</span>
       <button class="btn" onclick="computeChainUI()">⚙ Compute chain</button>
       <button class="btn sec" onclick="chainFit()" title="fit to screen">⤢ Fit</button>
       <button class="btn sec" onclick="chainZoomBy(1.25)">+</button>
       <button class="btn sec" onclick="chainZoomBy(0.8)">−</button>
       <label class="muted small" style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="chainUseCorp" checked onchange="if(CHAIN_CUR){renderChain();chainFit();}"> 🏠 Use corp supply</label>
       <label class="muted small" style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="chainLogi" onchange="CHAIN_LOGI=this.checked; if(CHAIN_CUR){ensureGalaxy().then(()=>{renderChain();chainFit();});}"> 🚀 Logistics</label>
+      <label class="muted small" style="display:flex;align-items:center;gap:5px;cursor:pointer" title="Assume 1 extractor per raw resource (what a real player has). Shows true throughput/h and how long the target quantity takes."><input type="checkbox" id="chainRealistic" onchange="if(CHAIN_CUR){renderChain();chainFit();}"> 🔧 Realistic (1 extractor)</label>
       <button class="btn sec" onclick="shareChain()" title="copy a link that opens this chain">🔗 Share</button>
       <button class="btn sec" onclick="saveChainLayout()" title="save node positions to your corp">💾 Save layout</button>
       <button class="btn sec" onclick="resetChainLayout()" title="auto-arrange again">↺ Auto</button>
@@ -1546,10 +1547,35 @@ function renderManualOnly(){
   document.getElementById('chainSummary').style.display='none';
   const eh=document.getElementById('chainEmptyHint'); if(eh) eh.style.display=CHAIN_MANUAL.length?'none':'block';
 }
+function fmtDur(h){
+  if(!isFinite(h)||h<=0) return '—';
+  if(h<1) return Math.max(1,Math.round(h*60))+' min';
+  if(h<48) return (h<10?h.toFixed(1):Math.round(h))+' h';
+  var d=h/24; if(d<21) return d.toFixed(1)+' days';
+  return Math.round(d)+' days';
+}
+function realisticRescale(nodes, edges, targetRate){
+  var list=Object.values(nodes), maxExt=0;
+  for(var i=0;i<list.length;i++){ var n=list[i]; if(n.raw && n.ext && n.net>0.0001){ var e=n.net/n.ext.rate; if(e>maxExt)maxExt=e; } }
+  if(maxExt<=1.0001) return {applied:false, maxExt:maxExt, rStar:targetRate};
+  var f=1/maxExt;
+  for(var j=0;j<list.length;j++){ var m=list[j];
+    if(m.rate) m.rate*=f;
+    if(m.net) m.net*=f;
+    if(m.corpRate) m.corpRate*=f;
+    if(m.recipe && m.net>0.0001 && m.perM){ m.machines=Math.max(1,Math.ceil(m.net/m.perM)); var bp=num(BLD[m.ws]&&BLD[m.ws].power); m.power=bp?Math.abs(bp)*m.machines:0; }
+    else if(m.raw && m.ext && m.net>0.0001){ m.machines=Math.max(1,Math.ceil(m.net/m.ext.rate)); var bp2=num(BLD['b-extractor']&&BLD['b-extractor'].power); m.power=bp2?Math.abs(bp2)*m.machines:0; }
+  }
+  for(var k in edges){ if(edges[k].rate) edges[k].rate*=f; }
+  return {applied:true, maxExt:maxExt, f:f, rStar:targetRate*f};
+}
 function renderChain(){
   if(!CHAIN_CUR){ renderManualOnly(); return; }
   if(!window.__layoutLoadedFor || window.__layoutLoadedFor!==layoutKey()){ loadLayoutFor(layoutKey()); window.__layoutLoadedFor=layoutKey(); }
   const {nodes, edges} = buildChain(CHAIN_CUR.slug, CHAIN_CUR.rate);
+  const _realOn = !!(document.getElementById('chainRealistic')||{}).checked;
+  window.CHAIN_REAL = _realOn ? realisticRescale(nodes, edges, CHAIN_CUR.rate) : {applied:false};
+  { const ru=document.getElementById('chainRateUnit'); if(ru) ru.textContent=_realOn?'units (goal)':'/hour'; }
   const list = Object.values(nodes);
   const maxD = Math.max(...list.map(n=>n.depth));
   const cols = {};
@@ -1637,6 +1663,7 @@ function renderChain(){
   const perBaseHTML = (window.CORP)?(function(){ let chips=Object.keys(perBase).map(function(id){ const b=(STATE.bases||[]).find(function(x){return x.id===id;}); const v=perBase[id]; return '<span class="basechip">🏠 '+esc(b?b.name:'base')+' · <b>'+v.m+'</b>m · '+fmt(v.p)+' MA · '+fmt(v.f)+' FP</span>'; }); if(unBase.m) chips.push('<span class="basechip un">◍ '+(anyAssigned?'unassigned':'not split across bases yet')+' · <b>'+unBase.m+'</b>m · '+fmt(unBase.p)+' MA · '+fmt(unBase.f)+' FP</span>'); return chips.length?'<span class="pbsep">PER BASE</span>'+chips.join(''):''; })():'';
   document.getElementById('chainSummary').style.display='flex';
   document.getElementById('chainSummary').innerHTML =
+    ((window.CHAIN_REAL&&window.CHAIN_REAL.applied)?`<span style="color:#ffd049;border-right:1px solid var(--border);padding-right:12px">🔧 realistic · <b>${fmt(window.CHAIN_REAL.rStar)}/h</b> of ${esc(itemName(CHAIN_CUR.slug))} · ${fmt(CHAIN_CUR.rate)} units in <b>${fmtDur(CHAIN_CUR.rate/window.CHAIN_REAL.rStar)}</b></span>`:'')+
     `<span>🏭 <b>${totMach}</b> machines</span>`+
     Object.entries(byWs).map(([w,c])=>`<span>${ico(w,'sm')}${esc(wsName(w))} <b>${c}</b></span>`).join('')+
     (corpGen>0?`<span class="cgauge"><span class="gl">⚡ POWER ${powOver?'⚠ ':''}</span><span class="gv"><b>${fmt(totPower)}</b> / ${fmt(corpGen)} MA</span><span class="gbar${powOver?' over':''}"><span style="width:${powPct}%"></span></span></span>`:`<span>⚡ power <b>${fmt(totPower)}</b> MA</span>`)+
