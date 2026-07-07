@@ -157,7 +157,7 @@ let G=null, corpState=null, view={x:0,y:0,k:1}, mode='galaxy', curSys=null;
 let hoverSys=null, hoverPlanet=null, pinned=null; // pinned = {type:'system'|'planet', sys, planet}
 let resFilter=null, route={a:null,b:null,path:null,cost:0};
 const cv=$('#cv'), ctx=cv.getContext('2d');
-function resize(){ cv.width=innerWidth; cv.height=innerHeight-46; cv.style.marginTop='46px'; draw(); }
+function resize(){ cv.width=innerWidth; cv.height=innerHeight-56; cv.style.marginTop='56px'; draw(); }
 addEventListener('resize',resize);
 
 /* ---------- data ---------- */
@@ -526,10 +526,16 @@ async function saveBase(sysId, planetIdx){
 let dragging=false,moved=false,last=null;
 function pickSys(mx,my){ let best=null,bd=14; for(const s of G.systems){const[x,y]=sxy(s);const d=Math.hypot(x-mx,y-my);if(d<bd){bd=d;best=s;}} return best; }
 function pickPlanet(mx,my){ if(mode!=='system')return null; const lay=planetLayout(); for(const o of lay.planets){ if(Math.hypot(o.x-mx,o.y-my)<o.r+8) return o; } return null; }
-cv.addEventListener('mousedown',e=>{dragging=true;moved=false;last=[e.offsetX,e.offsetY];cv.classList.add('drag');});
+let downPos=null;
+cv.addEventListener('mousedown',e=>{dragging=true;moved=false;last=[e.offsetX,e.offsetY];downPos=[e.offsetX,e.offsetY];cv.classList.add('drag');});
 addEventListener('mouseup',()=>{dragging=false;cv.classList.remove('drag');});
 cv.addEventListener('mousemove',e=>{
-  if(dragging&&mode==='galaxy'){view.x+=e.offsetX-last[0];view.y+=e.offsetY-last[1];last=[e.offsetX,e.offsetY];moved=true;hideCard();pinned=null;draw();return;}
+  if(dragging&&mode==='galaxy'){
+    // only treat as a pan (and block the click) once the pointer has moved past a small threshold —
+    // otherwise a tiny jitter during a click would be misread as a drag and swallow the click.
+    if(!moved && downPos && Math.hypot(e.offsetX-downPos[0], e.offsetY-downPos[1])<5) return;
+    view.x+=e.offsetX-last[0];view.y+=e.offsetY-last[1];last=[e.offsetX,e.offsetY];moved=true;hideCard();pinned=null;draw();return;
+  }
   if(pinned)return;
   if(mode==='galaxy'){
     const h=pickSys(e.offsetX,e.offsetY);

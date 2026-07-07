@@ -44,6 +44,9 @@
     var t=active?active.dataset.tab:null;
     var items=document.querySelectorAll('#hudRail .hud-navitem[data-tab]');
     for(var i=0;i<items.length;i++) items[i].classList.toggle('active', items[i].dataset.tab===t);
+    // Exit/sign-out only makes sense when signed in
+    var so=document.querySelector('#hudRail .hud-signout');
+    if(so){ var authed=false; try{ authed=Object.keys(localStorage).some(function(k){return /^sb-.*auth-token$/.test(k);}); }catch(e){} so.style.display=authed?'':'none'; }
   }
   function tryInit(){ if(buildRail()){ var nav=document.getElementById('nav'); if(nav){ new MutationObserver(function(){buildRail();}).observe(nav,{childList:true}); } setInterval(syncActive,500); return true; } return false; }
   function start(){ if(tryInit())return; var n=0,iv=setInterval(function(){ if(tryInit()||++n>40)clearInterval(iv); },250); }
