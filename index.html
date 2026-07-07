@@ -94,12 +94,11 @@ code{background:var(--panel2);padding:1px 5px;border-radius:4px;font-size:12px}
 img.ico{width:20px;height:20px;border-radius:4px;vertical-align:-5px;margin-right:5px}
 img.ico.sm{width:16px;height:16px;vertical-align:-3px;margin-right:3px}
 #chainWrap{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:12px;background:#0d1119;height:calc(100vh - 250px);min-height:420px;margin-top:12px}
-#chainCanvas{position:relative;transform-origin:0 0}
-#chainWrap{background:
-  linear-gradient(rgba(102,165,215,.045) 1px, transparent 1px),
-  linear-gradient(90deg, rgba(102,165,215,.045) 1px, transparent 1px),
-  #0d1119;
-  background-size:38px 38px,38px 38px,auto}
+#chainCanvas{position:relative;transform-origin:0 0;
+  background-image:
+    linear-gradient(rgba(102,165,215,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(102,165,215,.05) 1px, transparent 1px);
+  background-size:38px 38px,38px 38px}
 #chainTools{position:absolute;top:12px;right:12px;z-index:30;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
 #chainTools>*{pointer-events:auto}
 #chainTools .ctrow{display:flex;gap:6px;background:linear-gradient(180deg,rgba(9,20,38,.92),rgba(5,11,22,.94));border:1px solid rgba(96,165,215,.2);border-radius:11px;padding:6px;box-shadow:0 8px 26px rgba(2,8,20,.5);backdrop-filter:blur(6px)}
@@ -1435,7 +1434,7 @@ function makeManualDraggable(el, id){
     ev.preventDefault(); ev.stopPropagation(); el.setPointerCapture(ev.pointerId); el.style.zIndex=50;
     const sc=CHAIN_SCALE||1, sx=ev.clientX, sy=ev.clientY, sl=parseFloat(el.style.left)||0, st=parseFloat(el.style.top)||0;
     const move=e=>{ const nx=sl+(e.clientX-sx)/sc, ny=st+(e.clientY-sy)/sc; el.style.left=nx+'px'; el.style.top=ny+'px'; const m=CHAIN_MANUAL.find(x=>x.id===id); if(m){m.x=nx;m.y=ny;} const p=window.__chainPos['m:'+id]; if(p){p.x=nx;p.y=ny;} chainRedrawEdges(); };
-    const up=e=>{ el.releasePointerCapture(ev.pointerId); el.style.zIndex=''; el.removeEventListener('pointermove',move); el.removeEventListener('pointerup',up); };
+    const up=e=>{ el.releasePointerCapture(ev.pointerId); el.style.zIndex=''; const SNAP=38; const nx=Math.round((parseFloat(el.style.left)||0)/SNAP)*SNAP, ny=Math.round((parseFloat(el.style.top)||0)/SNAP)*SNAP; el.style.left=nx+'px'; el.style.top=ny+'px'; const mm=CHAIN_MANUAL.find(x=>x.id===id); if(mm){mm.x=nx;mm.y=ny;} const p=window.__chainPos['m:'+id]; if(p){p.x=nx;p.y=ny;} chainRedrawEdges(); el.removeEventListener('pointermove',move); el.removeEventListener('pointerup',up); };
     el.addEventListener('pointermove',move); el.addEventListener('pointerup',up);
   });
 }
@@ -1524,7 +1523,7 @@ function makeNodeDraggable(el, slug){
     if(group.length===1 && !ev.shiftKey) chainClearSel();
     const starts={}; group.forEach(g=>{ const e2=document.querySelector(`.cnode[data-cslug="${g}"]`); if(e2) starts[g]={l:parseFloat(e2.style.left)||0,t:parseFloat(e2.style.top)||0}; });
     const move=e=>{ const dx=(e.clientX-sx)/sc, dy=(e.clientY-sy)/sc; group.forEach(g=>{ const e2=document.querySelector(`.cnode[data-cslug="${g}"]`); if(!e2||!starts[g])return; const nx=starts[g].l+dx, ny=starts[g].t+dy; e2.style.left=nx+'px'; e2.style.top=ny+'px'; const p=window.__chainPos&&window.__chainPos[g]; if(p){p.x=nx;p.y=ny;} }); chainRedrawEdges(); };
-    const up=e=>{ el.releasePointerCapture(ev.pointerId); el.style.cursor='grab'; el.style.zIndex=''; el.removeEventListener('pointermove',move); el.removeEventListener('pointerup',up); group.forEach(g=>{ const e2=document.querySelector(`.cnode[data-cslug="${g}"]`); if(e2) CHAIN_LAYOUT[g]={x:parseFloat(e2.style.left)||0,y:parseFloat(e2.style.top)||0}; }); };
+    const up=e=>{ el.releasePointerCapture(ev.pointerId); el.style.cursor='grab'; el.style.zIndex=''; el.removeEventListener('pointermove',move); el.removeEventListener('pointerup',up); const SNAP=38; group.forEach(g=>{ const e2=document.querySelector(`.cnode[data-cslug="${g}"]`); if(e2){ const sx=Math.round((parseFloat(e2.style.left)||0)/SNAP)*SNAP, sy=Math.round((parseFloat(e2.style.top)||0)/SNAP)*SNAP; e2.style.left=sx+'px'; e2.style.top=sy+'px'; const p=window.__chainPos&&window.__chainPos[g]; if(p){p.x=sx;p.y=sy;} CHAIN_LAYOUT[g]={x:sx,y:sy}; } }); chainRedrawEdges(); };
     el.addEventListener('pointermove',move); el.addEventListener('pointerup',up);
   });
 }
