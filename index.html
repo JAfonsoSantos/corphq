@@ -326,7 +326,7 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
       <input id="chainItem" class="searchbox" placeholder="Target item…" list="itemDatalist" oninput="syncComputeBtn()">
       <input id="chainRate" type="number" min="1" value="60" style="width:90px" title="items per hour">
       <span class="muted" id="chainRateUnit">/hour</span>
-      <button class="btn" id="computeBtn" onclick="computeChainUI()">⚙ Compute chain</button>
+      <button class="btn" id="computeBtn" onclick="computeChainUI()" disabled title="Type a target item to enable">⚙ Compute chain</button>
       <button class="btn sec" onclick="shareChain()" title="copy a link that opens this chain">🔗 Share</button>
       <button class="btn sec" onclick="saveChainLayout()" title="save node positions to your corp">💾 Save layout</button>
       <button class="btn sec" onclick="toggleBPanel()" title="add buildings manually">＋ Buildings</button>
