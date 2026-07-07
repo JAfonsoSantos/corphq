@@ -12,7 +12,12 @@
       rail.innerHTML='<div class="hud-logo" title="CorpHQ"><i class="ph-fill ph-shooting-star"></i></div><div class="hud-navlist"></div><div class="hud-radar"><i class="ph-fill ph-broadcast"></i></div><a class="hud-signout" href="javascript:void(0)" title="Sign out"><i class="ph-fill ph-sign-out"></i><span>Exit</span></a>';
       document.body.appendChild(rail);
       rail.querySelector('.hud-logo').onclick=function(){ if(window.showLanding)showLanding(); };
-      rail.querySelector('.hud-signout').onclick=function(){ if(window.authLogout){ if(confirm('Sign out of CorpHQ?')) authLogout(); } else { location.reload(); } };
+      rail.querySelector('.hud-signout').onclick=function(){
+        if(!confirm('Sign out of CorpHQ?')) return;
+        try{ if(window.authLogout){ window.authLogout(); return; } }catch(e){}
+        try{ Object.keys(localStorage).forEach(function(k){ if(/^sb-.*-auth-token$/.test(k)) localStorage.removeItem(k); }); }catch(e){}
+        location.replace(location.pathname);
+      };
     }
     var list=rail.querySelector('.hud-navlist'); list.innerHTML='';
     btns.forEach(function(btn){
