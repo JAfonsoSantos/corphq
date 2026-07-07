@@ -108,6 +108,18 @@ img.ico.sm{width:16px;height:16px;vertical-align:-3px;margin-right:3px}
 #chainTools .cttog{display:flex;align-items:center;gap:7px;cursor:pointer;font-family:"Roboto Mono",monospace;font-size:11px;letter-spacing:.02em;color:#c7d4e2;white-space:nowrap}
 #chainTools .cttog input{accent-color:#66e0fa;cursor:pointer}
 #computeBtn[disabled]{opacity:.45;cursor:not-allowed;filter:grayscale(.4)}
+.cnode .nodeacts{position:absolute;top:-12px;right:8px;display:flex;gap:4px;opacity:0;transition:opacity .12s;z-index:9}
+.cnode:hover .nodeacts,.cnode.inspected .nodeacts{opacity:1}
+.cnode .nact{width:22px;height:22px;border-radius:6px;background:var(--panel2,#12233c);border:1px solid rgba(96,165,215,.3);color:#cfeefb;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;line-height:1}
+.cnode .nact:hover{background:rgba(102,224,250,.16);border-color:rgba(102,224,250,.55)}
+.cnode .nact.del:hover{background:rgba(253,86,60,.18);border-color:rgba(253,86,60,.55);color:#ff9a88}
+.cnode.inspected{outline:2px solid var(--accent);outline-offset:2px}
+#chainInspector{position:absolute;top:158px;right:12px;width:266px;max-height:calc(100% - 176px);overflow-y:auto;z-index:29;background:linear-gradient(180deg,rgba(9,20,38,.96),rgba(5,11,22,.97));border:1px solid rgba(102,224,250,.26);border-radius:12px;box-shadow:0 12px 40px rgba(2,8,20,.6);backdrop-filter:blur(6px);padding:13px 14px}
+#chainInspector .insp-recipe select{width:100%;margin-top:2px}
+#chainInspector .ib{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px;border-radius:8px;background:rgba(102,224,250,.08);border:1px solid rgba(102,224,250,.25);color:#cfeefb;font-family:"Roboto Mono",monospace;font-size:10px;cursor:pointer}
+#chainInspector .ib:hover{background:rgba(102,224,250,.16)}
+#chainInspector .ib.del{background:rgba(253,86,60,.1);border-color:rgba(253,86,60,.3);color:#ff9a88}
+#chainInspector .ib.del:hover{background:rgba(253,86,60,.2)}
 @media(max-width:820px){#chainTools{top:6px;right:6px}#chainTools .ctbtn{padding:6px 8px;font-size:10px}#chainTools .cttog{font-size:10px}}
 #chainSvg{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none}
 .cnode{position:absolute;width:216px;background:var(--panel);border:1.5px solid var(--border);border-radius:10px;padding:8px 10px;font-size:12px;box-shadow:0 4px 14px #0006}
@@ -346,7 +358,7 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
     <label class="cttog" title="Show the shuttle network between bases: when nodes are assigned to different bases it draws transfer links and flags routes beyond shuttle range (need cargo / FTL)."><input type="checkbox" id="chainLogi" checked onchange="CHAIN_LOGI=this.checked; if(CHAIN_CUR){ensureGalaxy().then(()=>{renderChain();chainFit();});}"> 🚀 Logistics</label>
     <label class="cttog" title="Assume a real fleet — 1 extractor per raw resource (multiple smelters only if they can't keep up). Shows true throughput per hour and how long the target quantity takes, instead of thousands of machines."><input type="checkbox" id="chainRealistic" checked onchange="if(CHAIN_CUR){renderChain();chainFit();}"> 🔧 Realistic (1 extractor)</label>
   </div>
-</div><div id="chainCanvas"><svg id="chainSvg"></svg></div><div id="chainEmptyHint" style="position:absolute;top:50%;left:55%;transform:translate(-50%,-50%);color:var(--dim2);font-size:14px;pointer-events:none;text-align:center">Compute a chain above, or open <b>＋ Buildings</b> and click to drop machines here — free-form mode.</div><div id="chainSelRect"></div><div id="bpanel"><div class="bphd"><button onclick="closeBPanel()" title="close" style="position:absolute;top:6px;right:4px;background:none;border:0;color:var(--dim2);font-size:15px;cursor:pointer;line-height:1;padding:2px 4px;z-index:2">✕</button><div style="padding-right:22px"><b>Buildings</b> <span class="muted small">click or drag</span></div><input id="bpSearch" placeholder="search…" oninput="renderBPanel()" style="width:100%;margin-top:6px"></div><div id="bpList"></div></div></div>
+</div><div id="chainInspector" style="display:none"></div><div id="chainCanvas"><svg id="chainSvg"></svg></div><div id="chainEmptyHint" style="position:absolute;top:50%;left:55%;transform:translate(-50%,-50%);color:var(--dim2);font-size:14px;pointer-events:none;text-align:center">Compute a chain above, or open <b>＋ Buildings</b> and click to drop machines here — free-form mode.</div><div id="chainSelRect"></div><div id="bpanel"><div class="bphd"><button onclick="closeBPanel()" title="close" style="position:absolute;top:6px;right:4px;background:none;border:0;color:var(--dim2);font-size:15px;cursor:pointer;line-height:1;padding:2px 4px;z-index:2">✕</button><div style="padding-right:22px"><b>Buildings</b> <span class="muted small">click or drag</span></div><input id="bpSearch" placeholder="search…" oninput="renderBPanel()" style="width:100%;margin-top:6px"></div><div id="bpList"></div></div></div>
 </section>
 
 <section class="tab" id="tab-calc">
@@ -1417,7 +1429,7 @@ function renderManualNodes(cv){
     el.className='cnode manual'; el.setAttribute('data-manual',m.id);
     el.style.left=m.x+'px'; el.style.top=m.y+'px';
     const makes = m.sel? `<div class="meta" style="color:var(--accent2)">→ ${ico(m.sel,'sm')||''}${esc(itemName(m.sel))}</div>`:'';
-    el.innerHTML=`<div class="nm">${tile(m.slug,'s')}${esc(bd?bd.name:m.slug)} <span class="pointer" style="float:right;color:var(--dim)" onclick="deleteManual('${m.id}')">✕</span></div>
+    el.innerHTML=`<div class="nodeacts"><span class="nact" title="Duplicate" onclick="event.stopPropagation();duplicateManual('${m.id}')">⧉</span><span class="nact" title="Details" onclick="event.stopPropagation();openInspector('m:${m.id}')">⚙</span><span class="nact del" title="Delete" onclick="event.stopPropagation();deleteManual('${m.id}')">🗑</span></div><div class="nm">${tile(m.slug,'s')}${esc(bd?bd.name:m.slug)}</div>
       ${manualSelect(m)}${makes}
 `;
     cv.appendChild(el);
@@ -1426,15 +1438,59 @@ function renderManualNodes(cv){
     makeManualDraggable(el, m.id);
   }
 }
+function _iHead(slug,name,sub){ return '<div style="display:flex;align-items:center;gap:11px"><span style="width:42px;height:42px;border-radius:11px;background:rgba(102,224,250,.06);border:1px solid rgba(102,224,250,.22);display:flex;align-items:center;justify-content:center;flex-shrink:0">'+tile(slug,'s')+'</span><div style="min-width:0"><div style="font-family:var(--font-display);font-size:15px;font-weight:600;color:#fff;line-height:1.2">'+esc(name)+'</div><div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.06em;color:#7d8ba1;margin-top:2px">'+esc(sub||'')+'</div></div></div>'; }
+function _iChip(k,v,c){ return '<div style="background:rgba(6,14,26,.6);border:1px solid rgba(96,165,215,.14);border-radius:8px;padding:8px 10px"><div style="font-family:var(--font-mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:#7d8ba1">'+k+'</div><div style="font-family:var(--font-display);font-size:13px;font-weight:600;color:'+(c||'#eaf3fb')+';margin-top:3px">'+v+'</div></div>'; }
+function _iSec(t){ return '<div style="font-family:var(--font-mono);font-size:8.5px;letter-spacing:.14em;color:#66e0fa;margin:14px 0 8px">◆ '+t+'</div>'; }
+function closeInspector(){ var el=document.getElementById('chainInspector'); if(el) el.style.display='none'; window.__inspectKey=null; document.querySelectorAll('.cnode.inspected').forEach(function(x){x.classList.remove('inspected');}); }
+function openInspector(key){
+  var el=document.getElementById('chainInspector'); if(!el||!key) return;
+  document.querySelectorAll('.cnode.inspected').forEach(function(x){x.classList.remove('inspected');});
+  window.__inspectKey=key; var body='', selEl=null;
+  if(key.indexOf('m:')===0){
+    var m=CHAIN_MANUAL.find(function(x){return x.id===key.slice(2);}); if(!m){ closeInspector(); return; }
+    var bd=BLD[m.slug]||{};
+    body=_iHead(m.slug, bd.name||m.slug, 'MANUAL BUILDING')
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">'+_iChip('Power',(num(bd.power)||0)+' MA')+_iChip('Footprint',(num(bd.footprint)||0)+' FP')+'</div>'
+      +_iSec('RECIPE')+'<div class="insp-recipe">'+manualSelect(m)+'</div>'
+      +(m.sel?(_iSec('MAKES')+'<div style="display:flex;align-items:center;gap:7px;font-size:12px;color:#eaf3fb">'+tile(m.sel,'s')+esc(itemName(m.sel))+'</div>'):'')
+      +'<div style="display:flex;gap:7px;margin-top:16px"><button class="ib" onclick="duplicateManual(\''+m.id+'\')">⧉ Duplicate</button><button class="ib del" onclick="deleteManual(\''+m.id+'\');closeInspector()">🗑 Delete</button></div>';
+    selEl=document.querySelector('.cnode.manual[data-manual="'+m.id+'"]');
+  } else {
+    var n=(window.__chainNodes||{})[key]; if(!n){ closeInspector(); return; }
+    var it=ITEMS[n.slug]||{};
+    var fp=(num(BLD[n.ws]&&BLD[n.ws].footprint)||0)*(n.machines||0);
+    var inputs=(window.__chainEdges||[]).filter(function(e){return e.to===n.slug;});
+    var mp=window.MARKET?mktPrice(n.slug):null;
+    var bc=window.MARKET?buildUnitCost(n.slug,0):null;
+    var rs=recipesFor(n.slug);
+    body=_iHead(n.slug, itemName(n.slug), n.raw?'RAW / EXTRACTED':((it.category||'').replace(/-/g,' ').toUpperCase()||'ITEM'));
+    body+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">';
+    body+=_iChip('Output', fmt(n.rate)+'/h','#66e0fa');
+    if(n.machines) body+=_iChip(n.raw?'Extractors':'Machines', n.machines+'× '+esc(wsName(n.ws||'')));
+    if(n.power) body+=_iChip('Power', fmt(n.power)+' MA');
+    if(fp) body+=_iChip('Footprint', fmt(fp)+' FP');
+    body+='</div>';
+    if(rs.length>1 && n.recipe){ body+=_iSec('RECIPE · '+rs.length+' OPTIONS')+'<div class="insp-recipe"><select onchange="setChainRecipe(\''+n.slug+'\',this.value)">'+rs.map(function(r){return '<option value="'+r._id+'" '+(n.recipe._id===r._id?'selected':'')+'>'+esc(wsName(r.workstation))+': '+r.ingredients.map(function(i2){return qtyNum(i2.qty)+'× '+itemName(i2.slug);}).join(', ')+'</option>';}).join('')+'</select></div>'; }
+    if(inputs.length){ body+=_iSec('INPUTS')+'<div style="display:flex;flex-direction:column;gap:5px">'+inputs.map(function(e){return '<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#c7d4e2">'+tile(e.from,'s')+'<span style="flex:1;min-width:0">'+esc(itemName(e.from))+'</span><span style="font-family:var(--font-mono);color:#9fb0c4">'+fmt(e.rate)+'/h</span></div>';}).join('')+'</div>'; }
+    if(mp&&mp.av&&bc!=null){ var buy=mp.av<bc; body+=_iSec('BUY VS BUILD')+'<div style="font-size:11.5px;color:#c7d4e2">Market <b style="color:#ffd049">'+fmt(mp.av)+'</b> · Build <b style="color:#5fe9ce">'+fmt(bc)+'</b>/u — <b style="color:'+(buy?'#ffd049':'#5fe9ce')+'">'+(buy?'buy':'build')+'</b></div>'; }
+    if(n.corpRate){ body+='<div style="margin-top:12px;font-size:11.5px;color:#5fe9ce">🏠 corp supplies '+fmt(n.corpRate)+'/h'+(n.supplied?' (fully)':'')+'</div>'; }
+    body+='<div style="display:flex;gap:7px;margin-top:16px"><button class="ib" onclick="itemDetail(\''+n.slug+'\')">🔎 Database</button></div>';
+    selEl=document.querySelector('.cnode[data-cslug="'+key+'"]');
+  }
+  el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-family:var(--font-mono);font-size:9px;letter-spacing:.16em;color:#66e0fa">◍ BUILDING DETAILS</span><span onclick="closeInspector()" style="cursor:pointer;color:#9fb0c4;font-size:14px">✕</span></div>'+body;
+  el.style.display='block';
+  if(selEl) selEl.classList.add('inspected');
+}
+function duplicateManual(id){ var m=CHAIN_MANUAL.find(function(x){return x.id===id;}); if(!m) return; var nn=JSON.parse(JSON.stringify(m)); nn.id='mn'+Date.now()+Math.floor(Math.random()*999); nn.x=(m.x||0)+42; nn.y=(m.y||0)+42; CHAIN_MANUAL.push(nn); if(window.CORP&&typeof pushPlan==='function') pushPlan(); renderChain(); }
 function makeManualDraggable(el, id){
   el.style.cursor='grab';
   el.addEventListener('pointerdown', ev=>{
-    if(ev.button!==0 || ev.target.closest('select,input,button,a,.pointer')) return;
+    if(ev.button!==0 || ev.target.closest('select,input,button,a,.pointer,.nact')) return;
     if(CHAIN_LINKING){ ev.preventDefault(); ev.stopPropagation(); startLink('m:'+id); return; }
     ev.preventDefault(); ev.stopPropagation(); el.setPointerCapture(ev.pointerId); el.style.zIndex=50;
     const sc=CHAIN_SCALE||1, sx=ev.clientX, sy=ev.clientY, sl=parseFloat(el.style.left)||0, st=parseFloat(el.style.top)||0;
     const move=e=>{ const nx=sl+(e.clientX-sx)/sc, ny=st+(e.clientY-sy)/sc; el.style.left=nx+'px'; el.style.top=ny+'px'; const m=CHAIN_MANUAL.find(x=>x.id===id); if(m){m.x=nx;m.y=ny;} const p=window.__chainPos['m:'+id]; if(p){p.x=nx;p.y=ny;} chainRedrawEdges(); };
-    const up=e=>{ el.releasePointerCapture(ev.pointerId); el.style.zIndex=''; const SNAP=38; const nx=Math.round((parseFloat(el.style.left)||0)/SNAP)*SNAP, ny=Math.round((parseFloat(el.style.top)||0)/SNAP)*SNAP; el.style.left=nx+'px'; el.style.top=ny+'px'; const mm=CHAIN_MANUAL.find(x=>x.id===id); if(mm){mm.x=nx;mm.y=ny;} const p=window.__chainPos['m:'+id]; if(p){p.x=nx;p.y=ny;} chainRedrawEdges(); el.removeEventListener('pointermove',move); el.removeEventListener('pointerup',up); };
+    const up=e=>{ el.releasePointerCapture(ev.pointerId); el.style.zIndex=''; if(Math.abs(e.clientX-sx)<4&&Math.abs(e.clientY-sy)<4){ openInspector('m:'+id); } const SNAP=38; const nx=Math.round((parseFloat(el.style.left)||0)/SNAP)*SNAP, ny=Math.round((parseFloat(el.style.top)||0)/SNAP)*SNAP; el.style.left=nx+'px'; el.style.top=ny+'px'; const mm=CHAIN_MANUAL.find(x=>x.id===id); if(mm){mm.x=nx;mm.y=ny;} const p=window.__chainPos['m:'+id]; if(p){p.x=nx;p.y=ny;} chainRedrawEdges(); el.removeEventListener('pointermove',move); el.removeEventListener('pointerup',up); };
     el.addEventListener('pointermove',move); el.addEventListener('pointerup',up);
   });
 }
@@ -1514,7 +1570,7 @@ function chainClearSel(){ CHAIN_SEL.clear(); document.querySelectorAll('.cnode.s
 function makeNodeDraggable(el, slug){
   el.style.cursor='grab';
   el.addEventListener('pointerdown', ev=>{
-    if(ev.button!==0 || ev.target.closest('select,button,input,a,.pointer')) return;
+    if(ev.button!==0 || ev.target.closest('select,button,input,a,.pointer,.nact')) return;
     if(CHAIN_LINKING){ ev.preventDefault(); ev.stopPropagation(); startLink(slug); return; }
     ev.preventDefault(); ev.stopPropagation(); el.setPointerCapture(ev.pointerId); el.style.cursor='grabbing'; el.style.zIndex=50;
     const sc=CHAIN_SCALE||1; const sx=ev.clientX, sy=ev.clientY;
@@ -1523,7 +1579,7 @@ function makeNodeDraggable(el, slug){
     if(group.length===1 && !ev.shiftKey) chainClearSel();
     const starts={}; group.forEach(g=>{ const e2=document.querySelector(`.cnode[data-cslug="${g}"]`); if(e2) starts[g]={l:parseFloat(e2.style.left)||0,t:parseFloat(e2.style.top)||0}; });
     const move=e=>{ const dx=(e.clientX-sx)/sc, dy=(e.clientY-sy)/sc; group.forEach(g=>{ const e2=document.querySelector(`.cnode[data-cslug="${g}"]`); if(!e2||!starts[g])return; const nx=starts[g].l+dx, ny=starts[g].t+dy; e2.style.left=nx+'px'; e2.style.top=ny+'px'; const p=window.__chainPos&&window.__chainPos[g]; if(p){p.x=nx;p.y=ny;} }); chainRedrawEdges(); };
-    const up=e=>{ el.releasePointerCapture(ev.pointerId); el.style.cursor='grab'; el.style.zIndex=''; el.removeEventListener('pointermove',move); el.removeEventListener('pointerup',up); const SNAP=38; group.forEach(g=>{ const e2=document.querySelector(`.cnode[data-cslug="${g}"]`); if(e2){ const sx=Math.round((parseFloat(e2.style.left)||0)/SNAP)*SNAP, sy=Math.round((parseFloat(e2.style.top)||0)/SNAP)*SNAP; e2.style.left=sx+'px'; e2.style.top=sy+'px'; const p=window.__chainPos&&window.__chainPos[g]; if(p){p.x=sx;p.y=sy;} CHAIN_LAYOUT[g]={x:sx,y:sy}; } }); chainRedrawEdges(); };
+    const up=e=>{ el.releasePointerCapture(ev.pointerId); el.style.cursor='grab'; el.style.zIndex=''; el.removeEventListener('pointermove',move); el.removeEventListener('pointerup',up); if(Math.abs(e.clientX-sx)<4&&Math.abs(e.clientY-sy)<4){ openInspector(slug); } const SNAP=38; group.forEach(g=>{ const e2=document.querySelector(`.cnode[data-cslug="${g}"]`); if(e2){ const sx=Math.round((parseFloat(e2.style.left)||0)/SNAP)*SNAP, sy=Math.round((parseFloat(e2.style.top)||0)/SNAP)*SNAP; e2.style.left=sx+'px'; e2.style.top=sy+'px'; const p=window.__chainPos&&window.__chainPos[g]; if(p){p.x=sx;p.y=sy;} CHAIN_LAYOUT[g]={x:sx,y:sy}; } }); chainRedrawEdges(); };
     el.addEventListener('pointermove',move); el.addEventListener('pointerup',up);
   });
 }
@@ -1645,7 +1701,7 @@ function renderChain(){
       const _nb = nodeBase(n); const _bc = (CHAIN_LOGI&&_nb)? (window.__baseColors&&window.__baseColors[_nb]) : null;
       html += `<div class="cnode ${n.raw?'raw':''} ${n.supplied?'cov':(n.corpRate?'part':(n.covered.length?'cov':''))}" data-cslug="${n.slug}" data-base="${_nb?esc(_nb):''}" style="left:${x}px;top:0px;visibility:hidden${_bc?';border-left:4px solid '+_bc:''}">
         ${CHAIN_LOGI&&_nb?`<div style="font-size:10px;color:${_bc};font-weight:600">🚀 ${esc(_nb)}</div>`:''}
-        <div class="nm">${ico(n.slug)}${esc(itemName(n.slug))}</div>
+        <div class="nodeacts"><span class="nact" title="Details" onclick="event.stopPropagation();openInspector('${n.slug}')">⚙</span></div><div class="nm">${ico(n.slug)}${esc(itemName(n.slug))}</div>
         <div class="meta">${fmt(n.rate)}/h${n.power?` · ${fmt(n.power)} pw`:''}</div>
         <div class="meta">${mach}</div>${bvb}${cov}${sel}${assign}</div>`;
       pos[n.slug]={x};
@@ -1683,7 +1739,7 @@ function renderChain(){
   }
   window.__shuttleLinks=shuttleLinks;
   CHAIN_DIM={W,H};
-  window.__chainPos=pos; window.__chainEdges=Object.values(edges);
+  window.__chainPos=pos; window.__chainEdges=Object.values(edges); window.__chainNodes=nodes; if(window.__inspectKey){ setTimeout(function(){ var ip=document.getElementById("chainInspector"); if(ip&&ip.style.display==="block"){ try{openInspector(window.__inspectKey);}catch(e){} } },0); }
   { const eh=document.getElementById('chainEmptyHint'); if(eh) eh.style.display='none'; }
   const sv=document.getElementById('chainSvg');
   sv.setAttribute('width',W); sv.setAttribute('height',H); sv.innerHTML=svg;
