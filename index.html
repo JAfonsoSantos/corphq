@@ -302,8 +302,10 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
   </div>
   <div class="grid cols2" style="margin-top:12px">
     <div class="card"><h3>Corps</h3><div id="adminCorps" class="muted small" style="overflow-x:auto">…</div></div>
-    <div class="card"><h3>Recent users</h3><div id="adminUsers" class="muted small">…</div></div>
+    <div class="card"><h3>Users (by corp)</h3><div id="adminUsers" class="muted small" style="overflow-x:auto;max-height:420px;overflow-y:auto">…</div></div>
   </div>
+  <div class="card" style="margin-top:12px"><h3>💬 Feedback</h3><div id="adminFeedback" class="muted small">…</div></div>
+  <div class="card" style="margin-top:12px"><h3>◍ Activity — logins · views · searches</h3><div id="adminEvents" class="muted small" style="max-height:420px;overflow:auto">…</div></div>
 </section>
 
 <section class="tab" id="tab-profit">
@@ -616,7 +618,7 @@ let activeTab = 'dashboard';
 let editingBaseId = null, draftDeposits = [], draftBuildings = [], draftMining = [], draftProduction = [];
 
 const App = {
-  show(tab){ activeTab=tab; document.querySelectorAll('section.tab').forEach(s=>s.classList.toggle('active', s.id==='tab-'+tab)); document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab)); if(tab==='calc'&&window.initCalc)initCalc(); if(tab==='chain'){ setTimeout(()=>{ const p=document.getElementById('bpanel'); if(p && p.style.display!=='block'){ p.style.display='block'; if(typeof renderBPanel==='function') renderBPanel(); if(typeof bindPalette==='function') bindPalette(); const btn=document.querySelector('button[onclick="toggleBPanel()"]'); if(btn) btn.classList.add('act'); } },80); } },
+  show(tab){ activeTab=tab; try{ if(window.logEvent && window.__lastView!==tab){ window.__lastView=tab; logEvent('view',tab); } }catch(e){} document.querySelectorAll('section.tab').forEach(s=>s.classList.toggle('active', s.id==='tab-'+tab)); document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab)); if(tab==='calc'&&window.initCalc)initCalc(); if(tab==='chain'){ setTimeout(()=>{ const p=document.getElementById('bpanel'); if(p && p.style.display!=='block'){ p.style.display='block'; if(typeof renderBPanel==='function') renderBPanel(); if(typeof bindPalette==='function') bindPalette(); const btn=document.querySelector('button[onclick="toggleBPanel()"]'); if(btn) btn.classList.add('act'); } },80); } },
 
   /* bases */
   editBase(id){
@@ -825,7 +827,7 @@ function renderDbChips(){
 }
 function renderDb(){
   const q = ($('#dbSearch').value||'').toLowerCase(), cat = $('#dbCat').value;
-  renderDbChips();
+  renderDbChips(); if(q&&q.length>=2&&window.logEventDebounced) logEventDebounced('search','db: '+q);
   const rows = GAME.items.filter(i=>(!q||i.name.toLowerCase().includes(q))&&(!cat||i.category===cat)).slice(0,300);
   $('#dbTable tbody').innerHTML = rows.map(i=>`<tr onclick="itemDetail('${i.slug}')">
     <td>${itemCell(i.slug)}</td><td class="val-dim">${esc(i.category||'')}</td><td>${esc(i.level||'—')}</td><td>${esc(i.storage||'—')}</td>
@@ -954,8 +956,23 @@ async function loadAdmin(){
   document.getElementById('adminKpis').innerHTML = kpi('Users',d.users)+kpi('Corps',d.corps)+kpi('Members',d.members)+kpi('Bases',d.bases)+kpi('Bases producing',d.production_rows)+kpi('Plans',d.plans);
   document.getElementById('adminCorps').innerHTML = '<table><thead><tr><th>Corp</th><th>Quad</th><th>Code</th><th class="right">Mem</th><th class="right">Bases</th><th>Created</th></tr></thead><tbody>'+
     (d.corp_list||[]).map(c=>`<tr><td>[${esc(c.tag)}] ${esc(c.name)}</td><td class="muted">${esc(c.quadrant)}</td><td><code>${esc(c.join_code)}</code></td><td class="right">${c.members}</td><td class="right">${c.bases}</td><td class="muted">${(c.created_at||'').slice(0,10)}</td></tr>`).join('')+'</tbody></table>';
-  document.getElementById('adminUsers').innerHTML = '<table><thead><tr><th>Email</th><th>Joined</th><th>Last seen</th></tr></thead><tbody>'+
-    (d.recent_users||[]).map(u=>`<tr><td>${esc(u.email)}</td><td class="muted">${(u.created_at||'').slice(0,10)}</td><td class="muted">${(u.last_sign_in_at||'').slice(0,16).replace('T',' ')}</td></tr>`).join('')+'</tbody></table>';
+  const us=await rpc('admin_users_full');
+  if(Array.isArray(us)&&us.length){
+    document.getElementById('adminUsers').innerHTML='<table><thead><tr><th>Email</th><th>Pilot</th><th>Corp</th><th>Last seen</th><th class="right">Events</th></tr></thead><tbody>'+
+      us.map(u=>`<tr><td>${esc(u.email||'')}</td><td>${esc(u.pilot||'')}</td><td class="muted">${u.corp_tag?'['+esc(u.corp_tag)+'] '+esc(u.corp_name||''):'—'}</td><td class="muted">${(u.last_sign_in_at||'').slice(0,16).replace('T',' ')}</td><td class="right">${u.event_count||0}</td></tr>`).join('')+'</tbody></table>';
+  } else {
+    document.getElementById('adminUsers').innerHTML = '<table><thead><tr><th>Email</th><th>Joined</th><th>Last seen</th></tr></thead><tbody>'+
+      (d.recent_users||[]).map(u=>`<tr><td>${esc(u.email)}</td><td class="muted">${(u.created_at||'').slice(0,10)}</td><td class="muted">${(u.last_sign_in_at||'').slice(0,16).replace('T',' ')}</td></tr>`).join('')+'</tbody></table>';
+  }
+  // feedback
+  const fb=await rpc('admin_feedback',{lim:100});
+  const fbEl=document.getElementById('adminFeedback');
+  if(fbEl) fbEl.innerHTML = (Array.isArray(fb)&&fb.length) ? fb.map(f=>`<div style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:8px 0"><div class="row" style="justify-content:space-between"><b>${esc(f.pilot||'Anonymous')}</b><span class="muted small">${(f.created_at||'').slice(0,16).replace('T',' ')}</span></div><div class="muted small">${esc(f.email||'')}${f.page?' · '+esc(f.page):''}</div><div style="margin:6px 0;white-space:pre-wrap;color:var(--text)">${esc(f.message||'')}</div>${f.image?`<img src="${f.image}" style="max-width:300px;border-radius:8px;cursor:zoom-in" onclick="const w=window.open('');w.document.write('<img src=\\''+this.src+'\\' style=max-width:100%>')">`:''}</div>`).join('') : '<div class="muted">No feedback yet.</div>';
+  // activity events
+  const ev=await rpc('admin_events',{lim:300});
+  const evEl=document.getElementById('adminEvents');
+  const EK={login:'🔑',view:'👁',search:'🔍',chain:'⚙',item:'📦',corpsearch:'🔎',base:'🏠',join:'🤝',corp:'🏢'};
+  if(evEl) evEl.innerHTML = (Array.isArray(ev)&&ev.length) ? '<table><thead><tr><th>When</th><th>Pilot</th><th>Email</th><th>Action</th><th>Detail</th></tr></thead><tbody>'+ev.map(e=>`<tr><td class="muted">${(e.created_at||'').slice(5,16).replace('T',' ')}</td><td>${esc(e.pilot||'')}</td><td class="muted">${esc(e.email||'')}</td><td>${EK[e.kind]||'•'} ${esc(e.kind||'')}</td><td class="muted">${esc(e.detail||'')}</td></tr>`).join('')+'</tbody></table>' : '<div class="muted">No activity logged yet — it will fill up as pilots use the app.</div>';
 }
 function renderCorpPanel(){
   const c=window.CORP; if(!c) return;
@@ -986,6 +1003,7 @@ init();
 /* ============ item detail modal ============ */
 function itemDetail(slug){
   const it=ITEMS[slug]; if(!it) return;
+  if(window.logEvent) logEvent('item', it.name);
   const mp=window.MARKET?mktPrice(slug):null;
   const made=recipesFor(slug);
   const usedIn=GAME.recipes.filter(r=>!r.recycling && r.ingredients.some(i=>i.slug===slug));
@@ -1302,6 +1320,7 @@ function computeChainUI(){
   const it = GAME.items.find(i=>i.name.toLowerCase()===name.toLowerCase()) || GAME.items.find(i=>i.name.toLowerCase().includes(name.toLowerCase()));
   if(!it){ if(typeof chainToast==='function') chainToast('✕ No item matches \''+name+'\' — check the spelling'); return; }
   CHAIN_CUR = {slug: it.slug, rate};
+  if(window.logEvent) logEvent('chain', it.name+' @'+rate);
   if(CHAIN_LOGI && typeof ensureGalaxy==='function'){ ensureGalaxy().then(()=>{ renderChain(); chainFitSoon(); }); }
   else { renderChain(); chainFitSoon(); }
 }
@@ -1949,6 +1968,8 @@ let TOKEN=null, USER=null;
 window.CORP=null; window.ROLE=null; window.MEMBERS=[];
 window.authHeaders=function(extra){ return Object.assign({apikey:SYNC.key, Authorization:'Bearer '+(TOKEN||SYNC.key), 'Content-Type':'application/json'}, extra||{}); };
 window.rpc=async function(fn,args){ try{ const r=await fetch(SYNC.url+'/rest/v1/rpc/'+fn,{method:'POST',headers:authHeaders(),body:JSON.stringify(args||{})}); return await r.json(); }catch(e){ return null; } };
+window.logEvent=function(kind,detail){ try{ if(window.USER&&window.rpc) rpc('log_event',{kind:kind,detail:(detail==null?'':String(detail)).slice(0,280)}); }catch(e){} };
+let _logT=null; window.logEventDebounced=function(kind,detail){ clearTimeout(_logT); _logT=setTimeout(function(){ logEvent(kind,detail); },700); };
 function openAuth(){ document.getElementById('authGate').style.display='flex'; if(USER&&!window.CORP) authShow('authOnboard'); }
 function closeAuth(){ document.getElementById('authGate').style.display='none'; }
 function authMsg(t,bad){ const e=document.getElementById('authMsg'); e.textContent=t||''; e.style.color=bad?'var(--bad)':'var(--dim)'; }
@@ -2010,6 +2031,7 @@ async function obSearch(){
   const q=((document.getElementById('obSearchQ')||{}).value||'').trim(); const box=document.getElementById('obSearchResults'); if(!box) return;
   if(q.length<2){ box.innerHTML='<div style="font-size:12px;color:#7d8ba1;padding:6px">Type at least 2 characters…</div>'; return; }
   box.innerHTML='<div style="font-size:12px;color:#7d8ba1;padding:6px">Searching…</div>';
+  if(window.logEventDebounced) logEventDebounced('corpsearch', q);
   const res=await rpc('search_corps',{q:q});
   if(!res || res.error || !Array.isArray(res)){ box.innerHTML='<div style="font-size:12.5px;color:#8a94a6;padding:10px;border:1px dashed rgba(96,165,215,.25);border-radius:10px;line-height:1.5">🔎 Corp search is not enabled yet on this network. For now, ask your corp for an <b style="color:#cfeefb">invite code</b>, or create your own corp.</div>'; return; }
   if(!res.length){ box.innerHTML='<div style="font-size:12.5px;color:#8a94a6;padding:8px">No corps match that. Try another name, or create a new corp.</div>'; return; }
@@ -2021,6 +2043,7 @@ async function afterAuth(){
   if(!window.CORP){ openOnboard(); return; }
   closeAuth(); closeOnboard();
   subscribeActivity();
+  if(window.logEvent) logEvent('login','corp:'+((window.CORP&&window.CORP.name)||'-'));
   if(window.onCorpReady) window.onCorpReady();
 }
 async function obCreate(){ const n=document.getElementById('obCorpName').value.trim(); const t=document.getElementById('obCorpTag').value.trim(); if(!n){authMsg('Corp name required',true);return;} authMsg('Creating…'); await savePilotProfile(document.getElementById('obPilot').value.trim()||'Pilot'); const q=document.getElementById('obQuad')?document.getElementById('obQuad').value:'abuxey'; const res=await rpc('create_corp',{cname:n,ctag:t||n.slice(0,3).toUpperCase(),cquad:q||'abuxey'}); if(res&&res.ok){ await afterAuth(); logActivity('corp','founded the corp'); } else authMsg((res&&res.error)||JSON.stringify(res)||'Failed',true); }
