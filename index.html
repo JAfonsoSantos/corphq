@@ -315,9 +315,9 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
       <button class="btn sec" onclick="chainFit()" title="fit to screen">⤢ Fit</button>
       <button class="btn sec" onclick="chainZoomBy(1.25)">+</button>
       <button class="btn sec" onclick="chainZoomBy(0.8)">−</button>
-      <label class="muted small" style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="chainUseCorp" checked onchange="if(CHAIN_CUR){renderChain();chainFit();}"> 🏠 Use corp supply</label>
-      <label class="muted small" style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="chainLogi" onchange="CHAIN_LOGI=this.checked; if(CHAIN_CUR){ensureGalaxy().then(()=>{renderChain();chainFit();});}"> 🚀 Logistics</label>
-      <label class="muted small" style="display:flex;align-items:center;gap:5px;cursor:pointer" title="Assume 1 extractor per raw resource (what a real player has). Shows true throughput/h and how long the target quantity takes."><input type="checkbox" id="chainRealistic" onchange="if(CHAIN_CUR){renderChain();chainFit();}"> 🔧 Realistic (1 extractor)</label>
+      <label class="muted small" title="Count what your corp already produces (deposits, mining, machines) as supplied, so the chain only builds what's missing. Green nodes = your corp already makes it." style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="chainUseCorp" checked onchange="if(CHAIN_CUR){renderChain();chainFit();}"> 🏠 Use corp supply</label>
+      <label class="muted small" title="Show the shuttle network between bases: when nodes are assigned to different bases it draws transfer links and flags routes beyond shuttle range (need cargo / FTL)." style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="chainLogi" checked onchange="CHAIN_LOGI=this.checked; if(CHAIN_CUR){ensureGalaxy().then(()=>{renderChain();chainFit();});}"> 🚀 Logistics</label>
+      <label class="muted small" style="display:flex;align-items:center;gap:5px;cursor:pointer" title="Assume a real fleet — 1 extractor per raw resource (multiple smelters only if they can't keep up). Shows true throughput per hour and how long the target quantity takes, instead of thousands of machines."><input type="checkbox" id="chainRealistic" checked onchange="if(CHAIN_CUR){renderChain();chainFit();}"> 🔧 Realistic (1 extractor)</label>
       <button class="btn sec" onclick="shareChain()" title="copy a link that opens this chain">🔗 Share</button>
       <button class="btn sec" onclick="saveChainLayout()" title="save node positions to your corp">💾 Save layout</button>
       <button class="btn sec" onclick="resetChainLayout()" title="auto-arrange again">↺ Auto</button>
@@ -1068,7 +1068,7 @@ function renderProfit(){
 const SHUTTLE_RANGE=600000;
 function nodeByslugSet(m,n){ m[n.slug]=n; }
 const BASE_COLORS=['#5eb2ff','#ffb454','#5fe08a','#f0a5ff','#ff7a7a','#7dd3fc','#c084fc','#facc15','#4ade80','#fb923c'];
-let CHAIN_LOGI=false; // logistics overlay on/off
+let CHAIN_LOGI=true; // logistics overlay on/off (checkbox default-checked)
 let GALAXY_CACHE=null, GALAXY_CACHE_QUAD=null;
 async function ensureGalaxy(){
   const q=(window.CORP&&window.CORP.quadrant)||'abuxey';
@@ -1257,8 +1257,8 @@ function computeChainUI(){
   const it = GAME.items.find(i=>i.name.toLowerCase()===name.toLowerCase()) || GAME.items.find(i=>i.name.toLowerCase().includes(name.toLowerCase()));
   if(!it) return alert('Item not found: '+name);
   CHAIN_CUR = {slug: it.slug, rate};
-  renderChain();
-  chainFitSoon();
+  if(CHAIN_LOGI && typeof ensureGalaxy==='function'){ ensureGalaxy().then(()=>{ renderChain(); chainFitSoon(); }); }
+  else { renderChain(); chainFitSoon(); }
 }
 function setChainRecipe(slug, rid){ STATE.recipeChoice[slug]=parseInt(rid); persist(false); renderChain(); }
 let CHAIN_LAYOUT={}; // slug -> {x,y} overrides for calculated nodes
