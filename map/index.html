@@ -664,5 +664,22 @@ async function authInit(){
 authInit();
 </script>
 
+<button id="fbBtn" title="Report a bug or suggest an idea" onclick="fbOpen()" style="position:fixed;right:18px;bottom:18px;z-index:400;width:52px;height:52px;border-radius:50%;background:linear-gradient(150deg,#fd563c,#c6280f);border:1px solid #ff7b66;color:#fff;font-size:22px;cursor:pointer;box-shadow:0 8px 24px rgba(253,86,60,.4)">🐞</button>
+<div id="fbPanel" style="position:fixed;right:18px;bottom:80px;z-index:400;width:320px;max-width:92vw;display:none;background:linear-gradient(180deg,rgba(9,20,38,.98),rgba(5,11,22,.98));border:1px solid rgba(102,224,250,.28);border-radius:14px;box-shadow:0 20px 60px rgba(2,8,20,.6);padding:14px;font-family:Inter,sans-serif">
+  <div style="display:flex;align-items:center;justify-content:space-between;font-weight:600;color:#fff;font-size:15px;margin-bottom:10px">💬 Report a bug / idea<span onclick="fbClose()" style="cursor:pointer;color:#9fb0c4">✕</span></div>
+  <textarea id="fbMsg" placeholder="What's the bug or idea? Be as specific as you like…" style="width:100%;min-height:88px;resize:vertical;background:rgba(6,14,26,.8);border:1px solid rgba(96,165,215,.22);border-radius:10px;color:#eaf3fb;padding:10px 12px;font-size:13px;outline:none;font-family:inherit"></textarea>
+  <label style="display:inline-flex;align-items:center;gap:7px;margin-top:9px;font-family:Roboto Mono,monospace;font-size:11px;color:#9fb0c4;cursor:pointer;border:1px dashed rgba(96,165,215,.3);border-radius:9px;padding:8px 12px">📎 Attach a screenshot<input type="file" id="fbImg" accept="image/*" onchange="fbPreview()" style="display:none"></label>
+  <div id="fbThumb"></div>
+  <button id="fbSend" onclick="fbSend()" style="width:100%;margin-top:10px;padding:11px;border-radius:10px;background:linear-gradient(150deg,#38c6f0,#04aad6);border:1px solid #66e0fa;color:#04121c;font-family:Roboto Mono,monospace;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer">Send feedback</button>
+  <div id="fbNote" style="min-height:16px;margin-top:8px;font-size:12px;text-align:center;color:#5fe9ce"></div>
+</div>
+<script>
+let _fbImg=null;
+function fbOpen(){document.getElementById('fbPanel').style.display='block';var m=document.getElementById('fbMsg');if(m)m.focus();}
+function fbClose(){document.getElementById('fbPanel').style.display='none';}
+function fbNote(t,bad){var e=document.getElementById('fbNote');if(e){e.textContent=t||'';e.style.color=bad?'#ff9a88':'#5fe9ce';}}
+function fbPreview(){var f=document.getElementById('fbImg').files[0];if(!f){_fbImg=null;document.getElementById('fbThumb').innerHTML='';return;}var rd=new FileReader();rd.onload=function(ev){var img=new Image();img.onload=function(){var max=1200,w=img.width,h=img.height;if(w>max||h>max){var r=Math.min(max/w,max/h);w=Math.round(w*r);h=Math.round(h*r);}var c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);_fbImg=c.toDataURL('image/jpeg',0.72);document.getElementById('fbThumb').innerHTML='<img src="'+_fbImg+'" style="max-width:100%;border-radius:8px;margin-top:8px;border:1px solid rgba(96,165,215,.2)">';};img.src=ev.target.result;};rd.readAsDataURL(f);}
+async function fbSend(){var msg=(document.getElementById('fbMsg').value||'').trim();if(!msg&&!_fbImg){fbNote('Write something or attach a picture first.',true);return;}var btn=document.getElementById('fbSend');btn.disabled=true;btn.textContent='Sending…';var res=null;try{res=await rpc('submit_feedback',{msg:msg,img:_fbImg,page:'map'+location.hash});}catch(e){}if(res&&res.ok){document.getElementById('fbMsg').value='';_fbImg=null;document.getElementById('fbThumb').innerHTML='';var fi=document.getElementById('fbImg');if(fi)fi.value='';fbNote('✓ Thanks! Sent to the team.');setTimeout(fbClose,1500);}else{fbNote('Could not send yet — try again in a moment.',true);}btn.disabled=false;btn.textContent='Send feedback';}
+</script>
 </body>
 </html>
