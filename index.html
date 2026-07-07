@@ -407,32 +407,44 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
 <dialog id="baseDialog">
   <form method="dialog" style="padding:16px;max-height:86vh;overflow:auto" onsubmit="App.saveBase(event)">
     <h3 id="baseDialogTitle">Add base</h3>
+    <p class="muted small" style="margin:-2px 0 12px;line-height:1.4">Just a <b style="color:#eaf3fb">name</b> and a <b style="color:#eaf3fb">location</b> to get started — everything else is optional and editable anytime.</p>
     <div class="grid cols2">
-      <label>Name<br><input id="bName" required style="width:100%"></label>
-      <label>Owner<br><input id="bOwner" placeholder="who runs it" style="width:100%"></label>
-      <label>Quadrant / Region<br><input id="bQuadrant" style="width:100%"></label>
-      <label>System<br><input id="bSystem" style="width:100%"></label>
-      <label>Planet / Moon<br><input id="bPlanet" style="width:100%"></label>
-      <label>Coords / landmark<br><input id="bCoords" style="width:100%"></label>
+      <label>Name<br><input id="bName" required placeholder="e.g. Xiphaco Base" style="width:100%"></label>
+      <label>Owner <span class="muted small">(optional)</span><br><input id="bOwner" placeholder="who runs it" style="width:100%"></label>
     </div>
-    <div class="row" style="margin:2px 0 8px"><button type="button" class="btn sec" onclick="App.findOnMap()"><i class="ph-fill ph-map-pin-line"></i> Find on map</button><span class="muted small" id="bLocHint" style="align-self:center">search a system on the galaxy map and pin this base</span></div>
-    <label>Notes<br><textarea id="bNotes" rows="2" style="width:100%"></textarea></label>
-    <h3 class="small" style="margin:10px 0 4px">Deposits / nodes at this base</h3>
-    <div id="bDeposits"></div>
-    <div class="row"><input id="bDepSearch" placeholder="Add deposit/node…" list="resourceDatalist" style="flex:1"><input id="bDepCount" type="number" min="1" value="1" style="width:70px" title="how many"><button type="button" class="btn sec" onclick="App.addDepositRow()">Add</button></div>
-    <h3 class="small" style="margin:10px 0 4px">Buildings at this base</h3>
-    <div id="bBuildings"></div>
-    <div class="row"><select id="bBldSelect" style="flex:1"></select><input id="bBldCount" type="number" min="1" value="1" style="width:70px"><button type="button" class="btn sec" onclick="App.addBuildingRow()">Add</button></div>
-    <h3 class="small" style="margin:10px 0 4px">Mining (deposits/geysers worked) <span class="muted">— add these from the Map</span></h3>
-    <div id="bMining"></div>
-    <h3 class="small" style="margin:10px 0 4px">Production <span class="muted">— what this base outputs</span></h3>
-    <div id="bProduction"></div>
-    <div class="row"><input id="bProdItem" placeholder="item this base makes…" list="itemDatalist" style="flex:1"><input id="bProdMachines" type="number" min="1" value="1" style="width:64px" title="how many machines"><button type="button" class="btn sec" onclick="App.addProdRow()">Add</button></div>
-    <div class="muted small" id="bProdHint"></div>
-    <div class="row" style="margin-top:12px;justify-content:flex-end;position:sticky;bottom:-16px;background:var(--panel,#0b0e14);padding:10px 0;border-top:1px solid var(--border);z-index:2">
+    <label style="display:block;margin-top:12px">Location</label>
+    <div class="row" style="margin:5px 0 4px;align-items:center;flex-wrap:wrap;gap:10px">
+      <button type="button" class="btn" onclick="App.findOnMap()"><i class="ph-fill ph-map-pin-line"></i> Find on map</button>
+      <span id="bLocChip" style="align-self:center"></span>
+    </div>
+    <div id="bLocManual" style="display:none;margin-top:6px">
+      <div class="grid cols2">
+        <label class="small">Quadrant / Region<br><input id="bQuadrant" oninput="App.renderLocChip()" style="width:100%"></label>
+        <label class="small">System<br><input id="bSystem" oninput="App.renderLocChip()" style="width:100%"></label>
+        <label class="small">Planet / Moon<br><input id="bPlanet" oninput="App.renderLocChip()" style="width:100%"></label>
+        <label class="small">Coords / landmark<br><input id="bCoords" style="width:100%"></label>
+      </div>
+    </div>
+    <button type="button" id="bAdvToggle" class="btn sec" style="width:100%;margin-top:16px;justify-content:center" onclick="App.toggleBaseAdv()"><i class="ph-fill ph-plus"></i> Add mining &amp; production <span class="muted small">(optional)</span></button>
+    <div id="bAdv" style="display:none;margin-top:12px">
+      <h3 class="small" style="margin:6px 0 2px"><i class="ph-fill ph-shovel"></i> What&#39;s mined here</h3>
+      <p class="muted small" style="margin:0 0 6px">Deposits &amp; geysers this base extracts. Tip: pin from the map to auto-fill.</p>
+      <div id="bDeposits"></div>
+      <div class="row"><input id="bDepSearch" placeholder="add a resource (e.g. Iron Deposit)…" list="resourceDatalist" style="flex:1"><input id="bDepCount" type="number" min="1" value="1" style="width:62px" title="how many"><button type="button" class="btn sec" onclick="App.addDepositRow()">Add</button></div>
+      <div id="bMining"></div>
+      <h3 class="small" style="margin:15px 0 2px"><i class="ph-fill ph-factory"></i> What this base produces</h3>
+      <p class="muted small" style="margin:0 0 6px">Machines here and the items they output.</p>
+      <div id="bBuildings"></div>
+      <div class="row"><select id="bBldSelect" style="flex:1"></select><input id="bBldCount" type="number" min="1" value="1" style="width:62px"><button type="button" class="btn sec" onclick="App.addBuildingRow()">Add</button></div>
+      <div id="bProduction"></div>
+      <div class="row"><input id="bProdItem" placeholder="item this base makes…" list="itemDatalist" style="flex:1"><input id="bProdMachines" type="number" min="1" value="1" style="width:62px" title="how many machines"><button type="button" class="btn sec" onclick="App.addProdRow()">Add</button></div>
+      <div class="muted small" id="bProdHint"></div>
+      <label style="display:block;margin-top:12px">Notes<br><textarea id="bNotes" rows="2" style="width:100%"></textarea></label>
+    </div>
+    <div class="row" style="margin-top:14px;justify-content:flex-end;position:sticky;bottom:-16px;background:var(--panel,#0b0e14);padding:10px 0;border-top:1px solid var(--border);z-index:2">
       <button type="button" class="btn danger" id="bDelete" onclick="App.deleteBase()">🗑 Delete base</button>
       <button type="button" class="btn sec" onclick="document.getElementById('baseDialog').close()">Cancel</button>
-      <button class="btn" type="submit">Save</button>
+      <button class="btn" type="submit"><i class="ph-fill ph-check"></i> Save base</button>
     </div>
   </form>
 </dialog>
@@ -632,7 +644,30 @@ const App = {
     draftMining = structuredClone(b.mining||[]); draftProduction = structuredClone(b.production||[]);
     $('#bDelete').style.display = id?'':'none';
     App.renderDraftLists();
+    App.renderLocChip(); App.toggleLocManual(false);
+    App.toggleBaseAdv(!!((b.deposits&&b.deposits.length)||(b.buildings&&b.buildings.length)||(b.mining&&b.mining.length)||(b.production&&b.production.length)||(b.notes&&String(b.notes).trim())));
     $('#baseDialog').showModal();
+  },
+  renderLocChip(){
+    var q=($('#bQuadrant').value||'').trim(), sys=($('#bSystem').value||'').trim(), pl=($('#bPlanet').value||'').trim();
+    var chip=$('#bLocChip'); if(!chip) return;
+    if(sys||pl||q){
+      var main=pl||sys||q; var extra=[]; if(sys&&pl&&sys!==main) extra.push(sys); if(q) extra.push(q);
+      chip.innerHTML='<span style="color:#5fe9ce;font-weight:600">📍 '+esc(main)+(extra.length?' <span style="color:#7d8ba1;font-weight:400">· '+esc(extra.join(' · '))+'</span>':'')+'</span> <span class="pointer" style="color:#7d8ba1;font-size:11px;margin-left:4px" onclick="App.toggleLocManual(true)">✎ edit</span>';
+    } else {
+      chip.innerHTML='<span class="muted small">No location yet — use <b style="color:#eaf3fb">Find on map</b>, or <span class="pointer" style="color:#66e0fa" onclick="App.toggleLocManual(true)">enter it manually</span></span>';
+    }
+  },
+  toggleLocManual(show){
+    var m=$('#bLocManual'); if(!m) return;
+    var vis = (show===undefined) ? (m.style.display==='none') : !!show;
+    m.style.display = vis?'block':'none';
+  },
+  toggleBaseAdv(show){
+    var a=$('#bAdv'), t=$('#bAdvToggle'); if(!a) return;
+    var vis = (show===undefined) ? (a.style.display==='none') : !!show;
+    a.style.display = vis?'block':'none';
+    if(t) t.innerHTML = vis ? '<i class="ph-fill ph-minus"></i> Hide mining &amp; production' : '<i class="ph-fill ph-plus"></i> Add mining &amp; production <span class="muted small">(optional)</span>';
   },
   findOnMap(){
     // stash the whole in-progress base so nothing is lost while the user picks a spot on the map
@@ -669,7 +704,8 @@ const App = {
     draftMining = structuredClone(draft.mining||[]); draftProduction = structuredClone(draft.production||[]);
     $('#bDelete').style.display = editingBaseId?'':'none';
     App.renderDraftLists();
-    if(loc){ var h=$('#bLocHint'); if(h){ h.textContent='✓ pinned: '+[loc.system,loc.planet].filter(Boolean).join(' · '); h.style.color='var(--good)'; } }
+    App.renderLocChip(); App.toggleLocManual(false);
+    App.toggleBaseAdv(!!(draftDeposits.length||draftBuildings.length||draftMining.length||draftProduction.length||(($('#bNotes').value||'').trim())));
     $('#baseDialog').showModal();
   },
   renderDraftLists(){
