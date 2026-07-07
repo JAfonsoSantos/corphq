@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>if(location.protocol==="http:"&&location.hostname.indexOf("localhost")<0&&location.hostname.indexOf("127.")<0){location.replace(location.href.replace(/^http:/,"https:"));}</script>
 <title>CorpHQ — SpaceCraft corp manager, chain planner & galaxy map</title>
 <meta name="description" content="Free SpaceCraft corp manager: shared bases, capacity-aware production chain designer, full galaxy map with resource finder and FTL routes. Run your corporation like fleet command.">
 <meta name="keywords" content="SpaceCraft, corp manager, production chain, galaxy map, resource finder, Shiro Games, base planner, crafting calculator">
@@ -402,7 +403,7 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
 
 <dialog id="detailDlg" style="max-width:520px;width:94%;padding:0;border:1px solid rgba(102,224,250,.28);border-radius:16px;background:linear-gradient(180deg,rgba(10,22,40,.98),rgba(5,11,22,.98));box-shadow:0 40px 100px rgba(2,8,20,.7);color:#dce6f2"><div id="detailBox"></div></dialog>
 <dialog id="baseDialog">
-  <form method="dialog" style="padding:16px" onsubmit="App.saveBase(event)">
+  <form method="dialog" style="padding:16px;max-height:86vh;overflow:auto" onsubmit="App.saveBase(event)">
     <h3 id="baseDialogTitle">Add base</h3>
     <div class="grid cols2">
       <label>Name<br><input id="bName" required style="width:100%"></label>
@@ -425,8 +426,8 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
     <div id="bProduction"></div>
     <div class="row"><input id="bProdItem" placeholder="item this base makes…" list="itemDatalist" style="flex:1"><input id="bProdMachines" type="number" min="1" value="1" style="width:64px" title="how many machines"><button type="button" class="btn sec" onclick="App.addProdRow()">Add</button></div>
     <div class="muted small" id="bProdHint"></div>
-    <div class="row" style="margin-top:12px;justify-content:flex-end">
-      <button type="button" class="btn danger" id="bDelete" onclick="App.deleteBase()">Delete</button>
+    <div class="row" style="margin-top:12px;justify-content:flex-end;position:sticky;bottom:-16px;background:var(--panel,#0b0e14);padding:10px 0;border-top:1px solid var(--border);z-index:2">
+      <button type="button" class="btn danger" id="bDelete" onclick="App.deleteBase()">🗑 Delete base</button>
       <button type="button" class="btn sec" onclick="document.getElementById('baseDialog').close()">Cancel</button>
       <button class="btn" type="submit">Save</button>
     </div>
@@ -693,6 +694,14 @@ const App = {
       persist(false); render();
     })();
   },
+  removeBase(id){
+    if(!confirm('Delete this base? This cannot be undone.')) return;
+    (async()=>{
+      if(window.CORP && String(id).length===36){ await deleteBaseRow(id); await fetchBases(); }
+      else STATE.bases = STATE.bases.filter(x=>x.id!==id);
+      persist(false); render(); if(typeof logActivity==='function') logActivity('base','deleted a base');
+    })();
+  },
 
   /* planner */
   addTarget(){
@@ -790,7 +799,7 @@ function baseCard(b, compact){
   const deps = (b.deposits||[]).map(d=>`<span class="chip">${ico(d.slug,'sm')}${esc(RES[d.slug]?RES[d.slug].name:d.slug)} ×${d.count}</span>`).join('');
   const blds = (b.buildings||[]).map(d=>`<span class="chip">${ico(d.slug,'sm')}${esc(BLD[d.slug]?BLD[d.slug].name:d.slug)} ×${d.count}</span>`).join('');
   return `<div class="card">
-    <h3 class="pointer" onclick="App.editBase('${b.id}')">${esc(b.name)} <span class="muted small">✎</span></h3>
+    <h3 style="display:flex;align-items:center;gap:8px"><span class="pointer" style="flex:1" onclick="App.editBase('${b.id}')">${esc(b.name)} <span class="muted small">✎</span></span><span class="pointer" title="delete base" style="color:var(--bad);font-size:15px" onclick="event.stopPropagation();App.removeBase('${b.id}')">🗑</span></h3>
     <div class="muted small">${b.type?(b.type==='personal'?'⛺ personal':'🏠 corp')+' · ':''}${esc(loc||'location unknown')} ${b.owner?'· '+esc(b.owner):''}</div>
     ${b.coords?`<div class="muted small">📍 ${esc(b.coords)}</div>`:''}
     <div class="row small"><span class="muted">Power</span> <span class="${p>=0?'raw':'chip bad'}">${fmt(p)}</span></div>
