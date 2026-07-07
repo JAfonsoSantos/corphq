@@ -2060,6 +2060,8 @@ async function authInit(){
   const {data:{session}}=await SBC.auth.getSession();
   if(session){ TOKEN=session.access_token; USER=session.user; window.TOKEN=TOKEN; window.USER=USER; await afterAuth(); }
   else if(window.onGuest) window.onGuest();
+  // preview/test the onboarding stepper anytime: corphq.space/?onboarding
+  try{ if(/onboarding/i.test(location.search+location.hash)){ setTimeout(function(){ if(window.openOnboard) openOnboard(); }, 400); } }catch(e){}
   SBC.auth.onAuthStateChange((ev,s)=>{ if(s){TOKEN=s.access_token; USER=s.user; window.TOKEN=TOKEN; window.USER=USER;} });
 }
 authInit();
