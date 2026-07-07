@@ -1958,7 +1958,7 @@ function renderChain(){
       </div>
     </div>
     <div id="authMsg" style="margin-top:12px;min-height:16px;font-size:13px;color:#9fb0c4"></div>
-    <div style="text-align:center;margin-top:10px"><span style="cursor:pointer;font-size:12px;color:#7d8ba1" onclick="closeAuth()">close</span></div>
+    <div style="text-align:center;margin-top:10px;display:flex;gap:16px;justify-content:center"><span style="cursor:pointer;font-size:12px;color:#ff9d8a" onclick="if(window.crBugOpen)crBugOpen()">🐞 Report a bug</span><span style="cursor:pointer;font-size:12px;color:#7d8ba1" onclick="closeAuth()">close</span></div>
   </div>
 </div>
 <div id="onboard" style="position:fixed;inset:0;z-index:250;display:none;background:radial-gradient(1000px 600px at 72% -10%,#06305c,#04101f 52%,#04060b);overflow-y:auto;color:#dce6f2">
@@ -1986,7 +1986,7 @@ function renderChain(){
     </div>
     <div id="obStep2" style="display:none">
       <h2 style="font-family:var(--font-display,sans-serif);font-size:26px;font-weight:700;color:#fff;margin:24px 0 6px">Your corporation</h2>
-      <p style="font-size:14px;color:#8a94a6;margin:0 0 18px">Create a new corp, join with an invite code, or find an existing one.</p>
+      <p style="font-size:14px;color:#8a94a6;margin:0 0 18px">Create your own corp, join with an invite code, or <b style="color:#cfeefb">🔍 Find a corp</b> and request to join — the admin approves you.</p>
       <div id="obTabs" style="display:flex;gap:6px;margin-bottom:18px">
         <button class="obtab act" data-t="create" onclick="obTab('create')">➕ Create</button>
         <button class="obtab" data-t="join" onclick="obTab('join')">🎟 Invite code</button>
@@ -2008,7 +2008,7 @@ function renderChain(){
       <div style="text-align:center;margin-top:14px"><span onclick="obGo(1)" style="cursor:pointer;font-size:12px;color:#9fb0c4">← Back</span></div>
     </div>
     <div id="obMsg" style="min-height:18px;margin-top:14px;font-size:13px;color:#9fb0c4;text-align:center"></div>
-    <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid rgba(96,165,215,.12)"><span onclick="authLogout()" style="cursor:pointer;font-family:var(--font-mono,monospace);font-size:11px;letter-spacing:.05em;color:#7d8ba1">⏻ Sign out</span></div>
+    <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid rgba(96,165,215,.12);display:flex;gap:18px;justify-content:center"><span onclick="if(window.crBugOpen)crBugOpen()" style="cursor:pointer;font-family:var(--font-mono,monospace);font-size:11px;letter-spacing:.05em;color:#ff9d8a">🐞 Report a bug / idea</span><span onclick="authLogout()" style="cursor:pointer;font-family:var(--font-mono,monospace);font-size:11px;letter-spacing:.05em;color:#7d8ba1">⏻ Sign out</span></div>
   </div>
 </div>
 <script>
@@ -2019,7 +2019,7 @@ window.authHeaders=function(extra){ return Object.assign({apikey:SYNC.key, Autho
 window.rpc=async function(fn,args){ try{ const r=await fetch(SYNC.url+'/rest/v1/rpc/'+fn,{method:'POST',headers:authHeaders(),body:JSON.stringify(args||{})}); return await r.json(); }catch(e){ return null; } };
 window.logEvent=function(kind,detail){ try{ if(window.USER&&window.rpc) rpc('log_event',{kind:kind,detail:(detail==null?'':String(detail)).slice(0,280)}); }catch(e){} };
 let _logT=null; window.logEventDebounced=function(kind,detail){ clearTimeout(_logT); _logT=setTimeout(function(){ logEvent(kind,detail); },700); };
-function openAuth(){ document.getElementById('authGate').style.display='flex'; if(USER&&!window.CORP) authShow('authOnboard'); }
+function openAuth(){ if(USER&&!window.CORP){ var g=document.getElementById('authGate'); if(g) g.style.display='none'; if(window.openOnboard) openOnboard(); return; } document.getElementById('authGate').style.display='flex'; }
 function closeAuth(){ document.getElementById('authGate').style.display='none'; }
 function authMsg(t,bad){ const e=document.getElementById('authMsg'); e.textContent=t||''; e.style.color=bad?'var(--bad)':'var(--dim)'; }
 function authShow(step){ for(const s of ['authStep1','authStep2','authOnboard']) document.getElementById(s).style.display = s===step?'block':'none'; }
