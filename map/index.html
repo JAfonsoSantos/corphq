@@ -488,8 +488,12 @@ function viewBaseModal(sysId, planetIdx){
 function usePick(sysId, planetIdx){
   const s=G.sysById[sysId]; if(!s) return;
   const planet = (planetIdx!=null && planetIdx!=='null') ? s.name+' '+(ROMAN[planetIdx]||planetIdx+1) : '';
+  // gather this location's deposit/geyser nodes so the planner can suggest only what's actually here
+  var nodes=[], seen={};
+  var src = (planetIdx!=null && planetIdx!=='null') ? [s.planets.find(function(p){return p.i===planetIdx;})] : s.planets;
+  src.forEach(function(pp){ if(!pp) return; ['dep','gey'].forEach(function(k){ (pp[k]||[]).forEach(function(r){ if(!seen[r.id]){ seen[r.id]=1; nodes.push({id:r.id, name:pretty(r.id), kind:k, d:r.d||0}); } }); }); });
   const sel=document.getElementById('quadSel');
-  const loc={ quadrant: sel?sel.value:'', system:s.name, planet:planet, coords:'' };
+  const loc={ quadrant: sel?sel.value:'', system:s.name, planet:planet, coords:'', nodes:nodes };
   try{ localStorage.setItem('corp:pickloc', JSON.stringify(loc)); }catch(e){}
   location.href='../?picked=1';
 }

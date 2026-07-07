@@ -429,6 +429,7 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
     <div id="bAdv" style="display:none;margin-top:12px">
       <h3 class="small" style="margin:6px 0 2px"><i class="ph-fill ph-shovel"></i> What&#39;s mined here</h3>
       <p class="muted small" style="margin:0 0 6px">Deposits &amp; geysers this base extracts. Tip: pin from the map to auto-fill.</p>
+      <div id="bMinedSuggest" style="display:none;margin:2px 0 8px"></div>
       <div id="bDeposits"></div>
       <div class="row"><input id="bDepSearch" placeholder="add a resource (e.g. Iron Deposit)…" list="resourceDatalist" style="flex:1"><input id="bDepCount" type="number" min="1" value="1" style="width:62px" title="how many"><button type="button" class="btn sec" onclick="App.addDepositRow()">Add</button></div>
       <div id="bMining"></div>
@@ -451,6 +452,7 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
 
 <datalist id="itemDatalist"></datalist>
 <datalist id="resourceDatalist"></datalist>
+<datalist id="planetNodesList"></datalist>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -643,7 +645,9 @@ const App = {
     draftDeposits = structuredClone(b.deposits||[]); draftBuildings = structuredClone(b.buildings||[]);
     draftMining = structuredClone(b.mining||[]); draftProduction = structuredClone(b.production||[]);
     $('#bDelete').style.display = id?'':'none';
+    window._pickNodes=[];
     App.renderDraftLists();
+    App.renderMinedSuggest();
     App.renderLocChip(); App.toggleLocManual(false);
     App.toggleBaseAdv(!!((b.deposits&&b.deposits.length)||(b.buildings&&b.buildings.length)||(b.mining&&b.mining.length)||(b.production&&b.production.length)||(b.notes&&String(b.notes).trim())));
     $('#baseDialog').showModal();
@@ -668,6 +672,26 @@ const App = {
     var vis = (show===undefined) ? (a.style.display==='none') : !!show;
     a.style.display = vis?'block':'none';
     if(t) t.innerHTML = vis ? '<i class="ph-fill ph-minus"></i> Hide mining &amp; production' : '<i class="ph-fill ph-plus"></i> Add mining &amp; production <span class="muted small">(optional)</span>';
+  },
+  renderMinedSuggest(){
+    var box=$('#bMinedSuggest'); if(!box) return;
+    var nodes=window._pickNodes||[];
+    var searchEl=$('#bDepSearch'); if(searchEl) searchEl.setAttribute('list', nodes.length?'planetNodesList':'resourceDatalist');
+    var dl=$('#planetNodesList'); if(dl) dl.innerHTML = nodes.map(function(n){return '<option value="'+esc(n.name)+'">';}).join('');
+    if(!nodes.length){ box.innerHTML=''; box.style.display='none'; return; }
+    var norm=function(x){return String(x).replace(/[-_]/g,'').toLowerCase();};
+    var have={}; draftMining.forEach(function(m){ have[norm(typeof m==='string'?m:m.id)]=1; }); draftDeposits.forEach(function(d){ have[norm(d.slug)]=1; });
+    var chips=nodes.filter(function(n){ return !have[norm(n.id)]; }).map(function(n){
+      return '<button type="button" class="chip" style="cursor:pointer;border-style:dashed;background:rgba(102,224,250,.06)" onclick="App.addMinedNode(\''+n.id+'\')">＋ '+esc(n.name)+' <span class="muted" style="font-size:10px">'+(n.kind==='gey'?'geyser':'deposit')+'</span></button>';
+    });
+    if(!chips.length){ box.innerHTML='<span class="muted small">✓ all of this planet&#39;s nodes added</span>'; box.style.display='block'; return; }
+    box.innerHTML='<div class="muted small" style="margin:2px 0 5px">◍ On this planet — tap to add:</div>'+chips.join(' ');
+    box.style.display='block';
+  },
+  addMinedNode(id){
+    var norm=function(x){return String(x).replace(/[-_]/g,'').toLowerCase();};
+    if(!draftMining.some(function(m){return norm(typeof m==='string'?m:m.id)===norm(id);}) && !draftDeposits.some(function(d){return norm(d.slug)===norm(id);})){ draftMining.push({id:id,n:1}); }
+    App.renderDraftLists(); App.renderMinedSuggest();
   },
   findOnMap(){
     // stash the whole in-progress base so nothing is lost while the user picks a spot on the map
@@ -703,9 +727,12 @@ const App = {
     draftDeposits = structuredClone(draft.deposits||[]); draftBuildings = structuredClone(draft.buildings||[]);
     draftMining = structuredClone(draft.mining||[]); draftProduction = structuredClone(draft.production||[]);
     $('#bDelete').style.display = editingBaseId?'':'none';
+    window._pickNodes = (loc && Array.isArray(loc.nodes)) ? loc.nodes : [];
+    if(window._pickNodes.length && window._pickNodes.length<=2){ window._pickNodes.forEach(function(n){ App.addMinedNode(n.id); }); }
     App.renderDraftLists();
+    App.renderMinedSuggest();
     App.renderLocChip(); App.toggleLocManual(false);
-    App.toggleBaseAdv(!!(draftDeposits.length||draftBuildings.length||draftMining.length||draftProduction.length||(($('#bNotes').value||'').trim())));
+    App.toggleBaseAdv(!!(draftDeposits.length||draftBuildings.length||draftMining.length||draftProduction.length||window._pickNodes.length||(($('#bNotes').value||'').trim())));
     $('#baseDialog').showModal();
   },
   renderDraftLists(){
@@ -941,7 +968,7 @@ function init(){
   $('#aboutVer').textContent = GAME.meta.gameVersion;
   $('#itemDatalist').innerHTML = GAME.items.filter(i=>recipesFor(i.slug).length||i.category!=='quests').map(i=>`<option value="${esc(i.name)}">`).join('');
   $('#resourceDatalist').innerHTML = GAME.resources.map(r=>`<option value="${esc(r.name)}">`).join('');
-  $('#bBldSelect').innerHTML = GAME.buildings.map(b=>`<option value="${b.slug}">${esc(b.name)}</option>`).join('');
+  $('#bBldSelect').innerHTML = GAME.buildings.slice().sort(function(a,b){ var ax=/extractor/i.test((a.slug||'')+' '+(a.name||''))?0:1, bx=/extractor/i.test((b.slug||'')+' '+(b.name||''))?0:1; if(ax!==bx) return ax-bx; if(ax===0){ var aa=(a.slug==='b-extractor'||/^extractor$/i.test(a.name||''))?0:1, bb=(b.slug==='b-extractor'||/^extractor$/i.test(b.name||''))?0:1; if(aa!==bb) return aa-bb; } return String(a.name).localeCompare(String(b.name)); }).map(b=>`<option value="${b.slug}">${esc(b.name)}</option>`).join('');
   const cats = [...new Set(GAME.items.map(i=>i.category).filter(Boolean))].sort();
   $('#dbCat').innerHTML = '<option value="">All categories</option>'+cats.map(c=>`<option>${c}</option>`).join('');
   $('#dbSearch').addEventListener('input', renderDb);
