@@ -2016,7 +2016,12 @@ async function afterAuth(){
 }
 async function obCreate(){ const n=document.getElementById('obCorpName').value.trim(); const t=document.getElementById('obCorpTag').value.trim(); if(!n){authMsg('Corp name required',true);return;} authMsg('Creating…'); await savePilotProfile(document.getElementById('obPilot').value.trim()||'Pilot'); const q=document.getElementById('obQuad')?document.getElementById('obQuad').value:'abuxey'; const res=await rpc('create_corp',{cname:n,ctag:t||n.slice(0,3).toUpperCase(),cquad:q||'abuxey'}); if(res&&res.ok){ await afterAuth(); logActivity('corp','founded the corp'); } else authMsg((res&&res.error)||JSON.stringify(res)||'Failed',true); }
 async function obJoinFn(){ const c=document.getElementById('obJoin').value.trim(); if(!c){authMsg('Enter an invite code',true);return;} authMsg('Joining…'); await savePilotProfile(document.getElementById('obPilot').value.trim()||'Pilot'); const res=await rpc('join_corp',{code:c}); if(res&&res.ok){ await afterAuth(); logActivity('join','joined the corp'); } else authMsg((res&&res.error)||'Failed',true); }
-async function authLogout(){ await SBC.auth.signOut(); location.reload(); }
+async function authLogout(){
+  try{ await SBC.auth.signOut({scope:'local'}); }catch(e){ try{ await SBC.auth.signOut(); }catch(e2){} }
+  try{ Object.keys(localStorage).forEach(function(k){ if(/^sb-.*-auth-token$/.test(k)||k.indexOf('supabase.auth')===0) localStorage.removeItem(k); }); }catch(e){}
+  try{ TOKEN=null; USER=null; window.CORP=null; window.ROLE=null; window.MEMBERS=[]; }catch(e){}
+  location.replace(location.pathname);
+}
 async function authInit(){
   const m=location.hash.match(/error_description=([^&]+)/); if(m){ openAuth(); authMsg(decodeURIComponent(m[1].replace(/\+/g,' ')),true); history.replaceState(null,'',location.pathname); }
   fetch(window.QUADS_URL||'data/index.json').then(r=>r.json()).then(idx=>{ window.QUADS = idx.map(q=>'<option value="'+q.slug+'">'+q.name+' ('+q.region+')</option>').join(''); ['obQuad','obQuadSel','obCQuad'].forEach(function(id){ var el=document.getElementById(id); if(el&&!el.innerHTML) el.innerHTML=window.QUADS; }); }).catch(()=>{});
