@@ -1428,10 +1428,20 @@ function renderManualNodes(cv){
     const el=document.createElement('div');
     el.className='cnode manual'; el.setAttribute('data-manual',m.id);
     el.style.left=m.x+'px'; el.style.top=m.y+'px';
-    const makes = m.sel? `<div class="meta" style="color:var(--accent2)">→ ${ico(m.sel,'sm')||''}${esc(itemName(m.sel))}</div>`:'';
-    el.innerHTML=`<div class="nodeacts"><span class="nact" title="Duplicate" onclick="event.stopPropagation();duplicateManual('${m.id}')">⧉</span><span class="nact" title="Details" onclick="event.stopPropagation();openInspector('m:${m.id}')">⚙</span><span class="nact del" title="Delete" onclick="event.stopPropagation();deleteManual('${m.id}')">🗑</span></div><div class="nm">${tile(m.slug,'s')}${esc(bd?bd.name:m.slug)}</div>
-      ${manualSelect(m)}${makes}
-`;
+    const _o = buildingOptions(m.slug);
+    const _pw = num(bd&&bd.power)||0;
+    let _rate=null;
+    if(m.sel){
+      if(_o && _o.type==='extract'){ const ex=extractorInfo(m.sel); _rate=ex?ex.rate:null; }
+      else { const rr=GAME.recipes.find(r=>!r.recycling && r.workstation===m.slug && r.outputs.some(x=>x.slug===m.sel)) || chosenRecipe(m.sel); if(rr) _rate=ratePerMachineH(rr, m.sel); }
+    }
+    const _title = m.sel? itemName(m.sel) : (bd?bd.name:m.slug);
+    const _tico  = m.sel? (ico(m.sel,'sm')||tile(m.slug,'s')) : tile(m.slug,'s');
+    const _acts=`<div class="nodeacts"><span class="nact" title="Duplicate" onclick="event.stopPropagation();duplicateManual('${m.id}')">⧉</span><span class="nact" title="Details" onclick="event.stopPropagation();openInspector('m:${m.id}')">⚙</span><span class="nact del" title="Delete" onclick="event.stopPropagation();deleteManual('${m.id}')">🗑</span></div>`;
+    const _sel = _o? `<div class="recipe-pick"><span class="rp-label">⇄ ${_o.type==='extract'?'Extracts':'Makes'}</span>${manualSelect(m)}</div>` : manualSelect(m);
+    el.innerHTML = `${_acts}<div class="nm">${_tico}${esc(_title)}</div>`
+      + (m.sel&&_rate!=null ? `<div class="meta">${fmt(_rate)}/h${_pw?` · ${fmt(_pw)} pw`:''}</div>` : (_pw?`<div class="meta">${fmt(_pw)} pw</div>`:''))
+      + `<div class="meta">1× ${esc(bd?bd.name:m.slug)}</div>${_sel}`;
     cv.appendChild(el);
     addLinkHandles(el,'m:'+m.id);
     window.__chainPos['m:'+m.id]={x:m.x, y:m.y, h:el.offsetHeight||70};
