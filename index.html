@@ -988,7 +988,7 @@ function renderCorpPanel(){
      ${(window.ROLE==='owner'||window.ROLE==='admin')?'<div class="grp muted" style="margin-top:14px;font-size:11px;letter-spacing:1px">◍ JOIN REQUESTS</div><div id="joinReqBox" class="muted small">Loading…</div>':''}
      <div class="grp muted" style="margin-top:14px;font-size:11px;letter-spacing:1px">◍ CORP ACTIVITY</div>
      <div id="activityFeed" class="muted small">Loading…</div>
-     <div class="row" style="margin-top:12px"><button class="btn danger" onclick="App.leaveCorp()">Leave corp</button></div>`;
+     <div class="row" style="margin-top:12px"><button class="btn danger" onclick="App.leaveCorp()">Leave corp</button>${window.ROLE==='owner'?'<button class="btn danger" style="background:linear-gradient(150deg,#7a1414,#3a0a0a);border-color:#a33" onclick="App.deleteCorp()">🗑 Delete corp</button>':''}</div>`;
   renderActivity();
   if(window.ROLE==='owner'||window.ROLE==='admin') renderJoinRequests();
 }
@@ -996,6 +996,15 @@ App.leaveCorp = async function(){
   if(!confirm('Leave '+window.CORP.name+'? Your corp data stays with the corp.')) return;
   await fetch(SYNC.url+'/rest/v1/memberships?user_id=eq.'+window.USER.id, {method:'DELETE', headers:sbHeaders()});
   location.reload();
+};
+App.deleteCorp = async function(){
+  if(window.ROLE!=='owner'){ alert('Only the corp owner can delete the corp.'); return; }
+  var nm=window.CORP?window.CORP.name:'this corp';
+  if(!confirm('Delete "'+nm+'" permanently? This removes the corp and ALL its bases, plans and members. This cannot be undone.')) return;
+  if(!confirm('Are you absolutely sure? Type-check: this will erase "'+nm+'" for everyone in it.')) return;
+  const res=await rpc('delete_corp');
+  if(res&&res.ok){ if(typeof notify==='function') notify('🗑 Corp deleted'); location.reload(); }
+  else alert((res&&res.error)||'Could not delete the corp.');
 };
 init();
 </script>
