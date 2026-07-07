@@ -1732,7 +1732,7 @@ function chainRedrawEdges(){
     const lw = Math.max(52, label.length*6+14);
     svg+=`<rect x="${mx-lw/2}" y="${(y1+y2)/2-9}" width="${lw}" height="16" rx="8" fill="${meta.valid?'#12351f':(meta.unset?'#1b2740':'#3a1414')}" stroke="${color}"/><text x="${mx}" y="${(y1+y2)/2+3}" text-anchor="middle" fill="${color}" font-size="10">${label}</text>`;
   }
-  const sv=document.getElementById('chainSvg'); if(sv) sv.innerHTML=svg;
+  const sv=document.getElementById('chainSvg'); if(sv) sv.innerHTML=(window.__infraSvg||'')+svg;
 }
 const CHAIN_SEL=new Set();
 function chainClearSel(){ CHAIN_SEL.clear(); document.querySelectorAll('.cnode.sel').forEach(n=>n.classList.remove('sel')); }
@@ -1950,7 +1950,7 @@ function renderChain(){
   window.__chainPos=pos; window.__chainEdges=Object.values(edges); window.__chainNodes=nodes; if(window.__inspectKey){ setTimeout(function(){ var ip=document.getElementById("chainInspector"); if(ip&&ip.style.display==="block"){ try{openInspector(window.__inspectKey);}catch(e){} } },0); }
   { const eh=document.getElementById('chainEmptyHint'); if(eh) eh.style.display='none'; }
   const sv=document.getElementById('chainSvg');
-  sv.setAttribute('width',W); sv.setAttribute('height',H); sv.innerHTML=infraSvg+svg;
+  window.__infraSvg=infraSvg; sv.setAttribute('width',W); sv.setAttribute('height',H); sv.innerHTML=infraSvg+svg;
   cv.querySelectorAll('.cnode').forEach(el=>{ const sl=el.getAttribute('data-cslug'); if(sl){ makeNodeDraggable(el, sl); addLinkHandles(el, sl); } });
   renderManualNodes(cv);
   chainRedrawEdges();
