@@ -1485,6 +1485,15 @@ function saveChainLayout(){
   if(window.CORP){ pushPlan(); logActivity('chain','saved a production chain'+(CHAIN_CUR?(' for '+itemName(CHAIN_CUR.slug)):'')); }
   const b=event&&event.target; if(b){ const t=b.textContent; b.textContent='✓ saved'; setTimeout(()=>b.textContent=t,1500); }
 }
+function chainCloneNode(slug){
+  var n=(window.__chainNodes||{})[slug]; if(!n) return;
+  var bslug = n.ws || (n.raw?'b-extractor':'b-workshop');
+  var p=(window.__chainPos&&window.__chainPos[slug])||{x:120,y:120};
+  var id='mn'+Date.now()+Math.floor(Math.random()*999);
+  CHAIN_MANUAL.push({id:id, slug:bslug, x:(p.x||120)+46, y:(p.y||120)+46, sel:slug});
+  if(window.CORP&&typeof pushPlan==='function') pushPlan();
+  renderChain();
+}
 function chainHideNode(key){ if(CHAIN_HIDE.indexOf(key)<0) CHAIN_HIDE.push(key); if(CHAIN_CUR){ STATE.layouts=STATE.layouts||{}; STATE.layouts[layoutKey()]={pos:JSON.parse(JSON.stringify(CHAIN_LAYOUT)),manual:JSON.parse(JSON.stringify(CHAIN_MANUAL)),links:JSON.parse(JSON.stringify(CHAIN_LINKS)),hide:JSON.parse(JSON.stringify(CHAIN_HIDE))}; if(window.CORP&&typeof pushPlan==='function') pushPlan(); } if(typeof closeInspector==='function') closeInspector(); renderChain(); }
 function resetChainLayout(){ CHAIN_LAYOUT={}; CHAIN_MANUAL=[]; CHAIN_LINKS=[]; CHAIN_HIDE=[]; CHAIN_LINKING=null; if(STATE.layouts) delete STATE.layouts[layoutKey()]; if(window.CORP) pushPlan(); renderChain(); chainFit(); }
 /* ---- manual building nodes ---- */
@@ -1670,7 +1679,7 @@ function openInspector(key){
     if(inputs.length){ body+=_iSec('INPUTS')+'<div style="display:flex;flex-direction:column;gap:5px">'+inputs.map(function(e){return '<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:#c7d4e2">'+tile(e.from,'s')+'<span style="flex:1;min-width:0">'+esc(itemName(e.from))+'</span><span style="font-family:var(--font-mono);color:#9fb0c4">'+fmt(e.rate)+'/h</span></div>';}).join('')+'</div>'; }
     if(mp&&mp.av&&bc!=null){ var buy=mp.av<bc; body+=_iSec('BUY VS BUILD')+'<div style="font-size:11.5px;color:#c7d4e2">Market <b style="color:#ffd049">'+fmt(mp.av)+'</b> · Build <b style="color:#5fe9ce">'+fmt(bc)+'</b>/u — <b style="color:'+(buy?'#ffd049':'#5fe9ce')+'">'+(buy?'buy':'build')+'</b></div>'; }
     if(n.corpRate){ body+='<div style="margin-top:12px;font-size:11.5px;color:#5fe9ce">🏠 corp supplies '+fmt(n.corpRate)+'/h'+(n.supplied?' (fully)':'')+'</div>'; }
-    body+='<div style="display:flex;gap:7px;margin-top:16px"><button class="ib" onclick="itemDetail(\''+n.slug+'\')">🔎 Database</button></div>';
+    body+='<div style="display:flex;gap:7px;margin-top:16px;flex-wrap:wrap"><button class="ib" onclick="itemDetail(\''+n.slug+'\')">🔎 Database</button><button class="ib" onclick="chainCloneNode(\''+n.slug+'\')">⧉ Duplicate</button><button class="ib del" onclick="chainHideNode(\''+n.slug+'\');closeInspector()">🗑 Remove</button></div>';
     selEl=document.querySelector('.cnode[data-cslug="'+key+'"]');
   }
   el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-family:var(--font-mono);font-size:9px;letter-spacing:.16em;color:#66e0fa">◍ BUILDING DETAILS</span><span onclick="closeInspector()" style="cursor:pointer;color:#9fb0c4;font-size:14px">✕</span></div>'+body;
@@ -1868,6 +1877,7 @@ function renderChain(){
   };
   const cols = {};
   for(const n of list){ const c = rankOf(n.slug); n._col=c; (cols[c]=cols[c]||[]).push(n); }
+  { const _H=CHAIN_HIDE||[]; if(_H.length) Object.keys(cols).forEach(function(c){ cols[c]=cols[c].filter(function(n){ return _H.indexOf(n.slug)<0; }); }); }
   const maxD = Math.max(0, ...Object.keys(cols).map(Number));
   // order each column by the vertical barycenter of its inputs (left->right) so the
   // flow reads cleanly and edges rarely cross; leftmost column falls back to rate.
@@ -1901,7 +1911,7 @@ function renderChain(){
       const _nb = nodeBase(n); const _bc = (CHAIN_LOGI&&_nb)? (window.__baseColors&&window.__baseColors[_nb]) : null;
       html += `<div class="cnode ${n.raw?'raw':''} ${n.supplied?'cov':(n.corpRate?'part':(n.covered.length?'cov':''))}" data-cslug="${n.slug}" data-base="${_nb?esc(_nb):''}" style="left:${x}px;top:0px;visibility:hidden${_bc?';border-left:4px solid '+_bc:''}">
         ${CHAIN_LOGI&&_nb?`<div style="font-size:10px;color:${_bc};font-weight:600">🚀 ${esc(_nb)}</div>`:''}
-        <div class="nodeacts"><span class="nact" title="Details" onclick="event.stopPropagation();openInspector('${n.slug}')">⚙</span></div><div class="nm">${ico(n.slug)}${esc(itemName(n.slug))}</div>
+        <div class="nodeacts"><span class="nact" title="Duplicate" onclick="event.stopPropagation();chainCloneNode('${n.slug}')">⧉</span><span class="nact" title="Details" onclick="event.stopPropagation();openInspector('${n.slug}')">⚙</span><span class="nact del" title="Remove from chain" onclick="event.stopPropagation();chainHideNode('${n.slug}')">🗑</span></div><div class="nm">${ico(n.slug)}${esc(itemName(n.slug))}</div>
         <div class="meta">${fmt(n.rate)}/h${n.power?` · ${fmt(n.power)} pw`:''}</div>
         <div class="meta">${mach}</div>${bvb}${cov}${_noBase}${sel}${assign}</div>`;
       pos[n.slug]={x};
