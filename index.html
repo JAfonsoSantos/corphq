@@ -1311,6 +1311,18 @@ function corpMiningFor(slug){
   }
   return out;
 }
+function depNameForBaseRaw(baseName, slug){
+  const norm = id => String(id).replace(/[-_]/g,'').toLowerCase();
+  const b=(STATE.bases||[]).find(x=>x.name===baseName); if(!b) return null;
+  const mins = miningEntries(b);
+  const src = mins.length ? mins : (b.deposits||[]).map(d=>({id:d.slug,n:d.count||1}));
+  for(const m of src){
+    const res=GAME.resources.find(x=>norm(x.slug)===norm(m.id)); if(!res) continue;
+    const drop=(res.drops||[]).find(x=>x.slug===slug && x.rate && String(x.rate).includes('/h'));
+    if(drop) return {name:res.name, n:(m.n||1), rate:(m.n||1)*parseFloat(drop.rate)};
+  }
+  return null;
+}
 function corpCapacity(slug){
   const srcs=[]; let tot=0;
   const norm = id => String(id).replace(/[-_]/g,'').toLowerCase();
@@ -1856,7 +1868,7 @@ function renderChain(){
   const pos={};
   window.__baseColors = baseColorMap();
   const _hasBases = window.CORP && (STATE.bases||[]).length;
-  const _minedRaws = _hasBases ? list.filter(n=>n.raw && corpMiningFor(n.slug).length) : [];
+  const _minedRaws = _hasBases ? list.filter(n=>n.raw && n.corpSources && n.corpSources.length) : [];
   const INFRA_COLS = _minedRaws.length ? 2 : 0;
   let html='';
   for(const c of Object.keys(cols)){
@@ -1870,7 +1882,7 @@ function renderChain(){
       const assign = (window.CORP && (n.machines || _abid)) ? `<select onchange="chainAssignSel(this.value,'${n.slug}',${n.net||n.rate})" title="which base makes this" style="${_abid?'border-color:var(--good)':''}"><option value="">${_abid?'— unassign —':'→ assign to base…'}</option>${STATE.bases.map(b=>`<option value="${b.id}" ${b.id===_abid?'selected':''}>${esc(b.name)}</option>`).join('')}</select>` : '';
       let bvb='';
       if(window.MARKET && !n.raw){ const mp=mktPrice(n.slug); if(mp&&mp.av){ const bc=buildUnitCost(n.slug,0); if(bc!=null){ const cheaper = mp.av<bc; bvb=`<div class="cov-badge" style="color:${cheaper?'var(--accent2)':'var(--dim)'}">💰 buy ${fmt(mp.av)} vs build ${fmt(bc)}/u${cheaper?' — buy':''}</div>`; } } }
-      const _noBase = (_hasBases && n.raw && !corpMiningFor(n.slug).length) ? `<div class="cov-badge" style="color:#ffb454">🏠 no base extracts this yet</div>` : '';
+      const _noBase = (_hasBases && n.raw && !(n.corpSources&&n.corpSources.length)) ? `<div class="cov-badge" style="color:#ffb454">🏠 no base extracts this yet</div>` : '';
       const _nb = nodeBase(n); const _bc = (CHAIN_LOGI&&_nb)? (window.__baseColors&&window.__baseColors[_nb]) : null;
       html += `<div class="cnode ${n.raw?'raw':''} ${n.supplied?'cov':(n.corpRate?'part':(n.covered.length?'cov':''))}" data-cslug="${n.slug}" data-base="${_nb?esc(_nb):''}" style="left:${x}px;top:0px;visibility:hidden${_bc?';border-left:4px solid '+_bc:''}">
         ${CHAIN_LOGI&&_nb?`<div style="font-size:10px;color:${_bc};font-weight:600">🚀 ${esc(_nb)}</div>`:''}
@@ -1904,16 +1916,20 @@ function renderChain(){
     let infraHtml=''; const baseAgg={};
     for(const n of _minedRaws){
       const rp=pos[n.slug]; if(!rp||rp.x==null) continue;
-      const srcs=corpMiningFor(n.slug);
+      const srcs=n.corpSources||[];
       const stackH = srcs.length*MH + Math.max(0,srcs.length-1)*MGAP;
       const rcy = (rp.y!=null?rp.y:PAD) + ((rp.h||90)/2);
       let my = rcy - stackH/2;
       const mineX = rp.x - COLW;
       srcs.forEach(function(sc){
         const color=(window.__baseColors&&window.__baseColors[sc.base])||'#5eb2ff';
+        const dep=depNameForBaseRaw(sc.base, n.slug);
+        const _label = dep?dep.name:itemName(n.slug);
+        const _rate = dep?dep.rate:(sc.rate||0);
+        const _nx = dep?dep.n:1;
         infraHtml += '<div class="cnode infra mine" data-infra="mine" style="left:'+mineX+'px;top:'+my+'px;visibility:visible;border-left:4px solid '+color+'">'
-          +'<div class="nm" style="font-size:12px">⛏ '+esc(sc.depName)+'</div>'
-          +'<div class="meta">'+fmt(sc.rate)+'/h · '+sc.n+'× '+esc(wsName("b-extractor"))+'</div>'
+          +'<div class="nm" style="font-size:12px">⛏ '+esc(_label)+'</div>'
+          +'<div class="meta">'+fmt(_rate)+'/h · '+_nx+'× '+esc(wsName("b-extractor"))+'</div>'
           +'<div class="meta" style="color:'+color+'">🏠 '+esc(sc.base)+'</div></div>';
         const x1=mineX+NODEW, y1=my+MH/2, x2=rp.x, y2=rcy, mx=(x1+x2)/2;
         infraSvg += '<path d="M'+x1+','+y1+' C'+mx+','+y1+' '+mx+','+y2+' '+x2+','+y2+'" fill="none" stroke="'+color+'" stroke-width="1.8"/>';
