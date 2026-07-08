@@ -272,12 +272,22 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
   </div>
 </section>
 
+<style>.bsfoot{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px;background:transparent;border:none;color:#9fb0c4;font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:.15s}.bsfoot:hover{background:rgba(102,224,250,.06);color:#cfeefb}</style>
 <section class="tab" id="tab-bases">
-  <div class="row">
-    <button class="btn" onclick="App.editBase(null)">+ Add base</button>
-    <span class="muted">Track every corp base: where it is, what it mines, what it runs.</span>
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap">
+    <div>
+      <div id="basesEyebrow" style="font-family:var(--font-mono);font-size:10px;letter-spacing:.22em;color:#66e0fa;margin-bottom:7px">◍ CORP BASES</div>
+      <h1 style="font-family:var(--font-display);font-size:26px;font-weight:700;letter-spacing:-.01em;color:#fff;margin:0">Bases &amp; mining assignments</h1>
+      <p style="font-size:13px;color:#8a94a6;margin-top:5px;max-width:560px">Track every corp base — where it is, what it mines and what it runs. One shared picture, live-synced across the corp.</p>
+    </div>
+    <div style="display:flex;gap:9px;flex-shrink:0">
+      <button class="btn sec" onclick="location.href='map/'"><i class="ph-fill ph-map-trifold"></i> Open map</button>
+      <button class="btn" onclick="App.editBase(null)"><i class="ph-fill ph-plus"></i> Add base</button>
+    </div>
   </div>
-  <div class="grid cols2" id="basesList"></div>
+  <div id="basesKpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px"></div>
+  <div id="basesAlert"></div>
+  <div id="basesGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start"></div>
 </section>
 
 <section class="tab" id="tab-planner">
@@ -910,7 +920,7 @@ function render(){
   }
 
   /* bases */
-  $('#basesList').innerHTML = STATE.bases.map(b=>baseCard(b,false)).join('') || emptyStateHTML({icon:'ph-planet',fg:'#ff7b66',title:'No bases yet',desc:'Register your first base — pin it from the galaxy map or search a system. Add its deposits and extractors and the whole corp shares the same live picture.',ctas:[{label:'Register base',icon:'ph-plus',primary:true,on:'App.editBase(null)'},{label:'Open map',icon:'ph-map-trifold',on:"location.href='map/'"}]});
+  if(typeof renderBasesTab==='function') renderBasesTab();
 
   /* planner */
   $('#targets').innerHTML = STATE.planTargets.map((t,i)=>`<span class="chip">${ico(t.slug,'sm')}${esc(itemName(t.slug))} ×${t.qty} <span class="pointer" title="open in Chain Designer" onclick="App.toChain('${t.slug}')">⚙</span> <span class="pointer" onclick="App.rmTarget(${i})">✕</span></span>`).join('') || '<span class="muted small">no targets</span>';
@@ -945,32 +955,74 @@ function sourceHint(slug){
 }
 function baseCard(b, compact){
   const p = basePower(b);
-  const loc = [b.quadrant,b.system,b.planet].filter(Boolean).join(' › ');
-  const deps = (b.deposits||[]).map(d=>`<span class="chip">${ico(d.slug,'sm')}${esc(RES[d.slug]?RES[d.slug].name:d.slug)} ×${d.count}</span>`).join('');
-  const blds = (b.buildings||[]).map(d=>`<span class="chip">${ico(d.slug,'sm')}${esc(BLD[d.slug]?BLD[d.slug].name:d.slug)} ×${d.count}</span>`).join('');
-  const prod = (b.production&&b.production.length)?`<div class="flexwrap" style="margin-top:8px">${b.production.map(pr=>`<span class="chip" style="color:var(--accent)">${ico(pr.slug,'sm')}${esc(itemName(pr.slug))} ${fmt(pr.rate)}/h <span class="pointer" title="remove" onclick="event.stopPropagation();unassignProduction('${b.id}','${pr.slug}')">✕</span></span>`).join('')}</div>`:'';
-  const mine = (b.mining&&b.mining.length)?`<div class="flexwrap" style="margin-top:8px">${b.mining.map(m=>{const mid=typeof m==='string'?m:m.id; const mn=typeof m==='string'?1:(m.n||1); return `<span class="chip ok">${icoRes(mid,'sm')}${esc(String(mid).replace(/_/g,' ').replace(/([a-z])([A-Z])/g,'$1 $2'))}${mn>1?' ×'+mn:''}</span>`;}).join('')}</div>`:'';
-  return `<div class="card" style="display:flex;flex-direction:column">
-    <div style="display:flex;align-items:flex-start;gap:11px">
-      <span style="width:38px;height:38px;flex-shrink:0;border-radius:11px;background:rgba(102,224,250,.08);border:1px solid rgba(102,224,250,.22);display:flex;align-items:center;justify-content:center;font-size:18px">${b.type==='personal'?'⛺':'🏠'}</span>
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b class="pointer" style="font-family:var(--font-display);font-size:15px;color:#fff" title="open Base Designer" onclick="openBaseDesigner('${b.id}')">${esc(b.name)}</b>${b.type?`<span class="pill2 ${b.type==='personal'?'':'ok'}" style="font-size:9px;letter-spacing:.08em">${b.type==='personal'?'PERSONAL':'CORP'}</span>`:''}</div>
-        <div class="muted small" style="margin-top:3px">📍 ${esc(loc||'location unknown')}${b.owner?' · '+esc(b.owner):''}</div>
-        ${b.coords?`<div class="muted small">${esc(b.coords)}</div>`:''}
+  const loc = [b.quadrant,b.system,b.planet].filter(Boolean).join(' › ')||'location unknown';
+  const prod = (b.production||[]).slice().sort((x,y)=>(y.rate||0)-(x.rate||0));
+  if(compact){
+    return `<div class="card"><div style="display:flex;align-items:center;gap:8px"><b>${esc(b.name)}</b><span class="muted small" style="margin-left:auto">${esc([b.system,b.planet].filter(Boolean).join(' · '))}</span></div>${prod.length?`<div class="flexwrap" style="margin-top:6px">${prod.slice(0,3).map(pr=>`<span class="chip" style="color:var(--accent)">${ico(pr.slug,'sm')}${esc(itemName(pr.slug))} ${fmt(pr.rate||0)}/h</span>`).join('')}</div>`:''}</div>`;
+  }
+  const accent = b.type==='personal' ? '#ffd049' : '#66e0fa';
+  const maxR = prod.reduce((m,x)=>Math.max(m,x.rate||0),0)||1;
+  const prodHTML = prod.length ? prod.map(pr=>{ const pct=Math.max(4,Math.round((pr.rate||0)/maxR*100)); return `<div style="margin-bottom:10px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px"><span style="display:flex;align-items:center;gap:8px;font-size:12px;color:#dce6f2">${ico(pr.slug,'sm')}${esc(itemName(pr.slug))}</span><span style="font-family:var(--font-mono);font-size:11px;color:#eaf3fb">${fmt(pr.rate||0)} <span style="color:#566072">/h</span></span></div><div style="height:5px;border-radius:99px;background:rgba(96,165,215,.1);overflow:hidden"><div style="height:100%;width:${pct}%;border-radius:99px;background:linear-gradient(90deg,${accent},#04aad6);box-shadow:0 0 8px ${accent}"></div></div></div>`; }).join('') : '<div class="muted small" style="padding:2px 0 8px">No production assigned yet.</div>';
+  const norm=id=>String(id).replace(/[-_]/g,'').toLowerCase();
+  const mineArr=(b.mining||[]).map(m=>{const mid=typeof m==='string'?m:m.id;const mn=typeof m==='string'?1:(m.n||1);const rn=GAME.resources.find(r=>norm(r.slug)===norm(mid));return {name:rn?rn.name:mid, id:mid, n:mn};});
+  const depArr=mineArr.length?mineArr:(b.deposits||[]).map(d=>({name:(RES[d.slug]?RES[d.slug].name:d.slug), id:d.slug, n:d.count||1}));
+  const chips=depArr.map(d=>`<span style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:10.5px;color:#c7d4e2;background:rgba(95,233,206,.07);border:1px solid rgba(95,233,206,.2);border-radius:99px;padding:5px 11px">${icoRes(d.id,'sm')}${esc(d.name)}${d.n>1?` <span style="color:#5fe9ce">×${d.n}</span>`:''}</span>`).join('');
+  return `<div style="position:relative;background:linear-gradient(180deg,rgba(8,18,34,.92),rgba(4,9,18,.94));border:1px solid rgba(96,165,215,.18);border-radius:15px;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,${accent},transparent);opacity:.6"></div>
+    <div style="padding:16px 17px 13px;border-bottom:1px solid rgba(96,165,215,.1)">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="width:42px;height:42px;border-radius:11px;background:${accent}14;border:1px solid ${accent}38;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ph-fill ${b.type==='personal'?'ph-tent':'ph-factory'}" style="font-size:21px;color:${accent}"></i></div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px"><span class="pointer" style="font-size:14.5px;font-weight:600;color:#eaf3fb" title="open Base Designer" onclick="openBaseDesigner('${b.id}')">${esc(b.name)}</span><i class="ph-fill ph-pencil-simple pointer" style="font-size:12px;color:#566072" title="edit details" onclick="App.editBase('${b.id}')"></i></div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px;font-family:var(--font-mono);font-size:9.5px;color:#7d8ba1"><i class="ph-fill ph-map-pin" style="font-size:11px;color:#566072"></i>${esc(loc)}${b.owner?' · '+esc(b.owner):''}</div>
+        </div>
+        <span class="pointer" title="delete base" style="width:26px;height:26px;border-radius:7px;border:1px solid rgba(253,86,60,.2);display:flex;align-items:center;justify-content:center;color:#c98;flex-shrink:0" onclick="App.removeBase('${b.id}')"><i class="ph-fill ph-trash" style="font-size:12px"></i></span>
       </div>
-      <span style="font-family:var(--font-mono);font-size:11px;color:${p>=0?'#5fe9ce':'#ff7a7a'};white-space:nowrap;padding-top:3px">⚡ ${fmt(p)}</span>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:13px">
+        <span style="display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:9.5px;color:${p<0?'#ff9d8a':'#9fb0c4'};background:${p<0?'rgba(253,86,60,.08)':'rgba(96,165,215,.08)'};border:1px solid ${p<0?'rgba(253,86,60,.26)':'rgba(96,165,215,.18)'};border-radius:99px;padding:4px 10px"><i class="ph-fill ph-lightning" style="font-size:11px"></i>Power ${fmt(p)}</span>
+        <span style="margin-left:auto;font-family:var(--font-mono);font-size:9.5px;color:#7d8ba1">${b.type==='personal'?'PERSONAL':'CORP'}</span>
+      </div>
     </div>
-    ${prod}${mine}
-    ${deps?`<div class="flexwrap" style="margin-top:8px">${deps}</div>`:''}
-    ${!compact&&blds?`<div class="flexwrap" style="margin-top:8px">${blds}</div>`:''}
-    ${!compact&&b.notes?`<div class="muted small" style="margin-top:8px">${esc(b.notes)}</div>`:''}
-    <div class="row" style="margin-top:14px;gap:8px;align-items:center">
-      <button class="btn" style="flex:1;justify-content:center" onclick="openBaseDesigner('${b.id}')">🏗 Base Designer</button>
-      <button class="btn sec" onclick="App.editBase('${b.id}')" title="Edit details">✎ Edit</button>
-      <button class="btn sec" style="color:var(--bad);border-color:rgba(255,122,122,.4)" onclick="App.removeBase('${b.id}')" title="Delete base">🗑</button>
+    <div style="padding:14px 17px 4px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px"><span style="font-family:var(--font-mono);font-size:9px;letter-spacing:.14em;color:#66e0fa">PRODUCES</span><span style="font-family:var(--font-mono);font-size:9.5px;color:#7d8ba1">${prod.length} output${prod.length!==1?'s':''}${prod.length?` · <span style="color:#c7d4e2">${fmt(prod.reduce((a,x)=>a+(x.rate||0),0))}/h</span>`:''}</span></div>
+      ${prodHTML}
+    </div>
+    <div style="padding:8px 17px 15px">
+      <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.14em;color:#7d8ba1;margin-bottom:9px">DEPOSITS · ${depArr.length}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:7px">${chips||'<span class="muted small">none yet</span>'}</div>
+    </div>
+    <div style="display:flex;border-top:1px solid rgba(96,165,215,.1)">
+      <button class="bsfoot" style="border-right:1px solid rgba(96,165,215,.1);color:#cfeefb" onclick="openBaseDesigner('${b.id}')"><i class="ph-fill ph-buildings"></i> Base Designer</button>
+      <button class="bsfoot" style="border-right:1px solid rgba(96,165,215,.1)" onclick="App.show('chain')"><i class="ph-fill ph-flow-arrow"></i> Plan chain</button>
+      <button class="bsfoot" onclick="location.href='map/'"><i class="ph-fill ph-map-pin"></i> Locate</button>
     </div>
   </div>`;
 }
+function bsRegisterCard(){
+  return '<div onclick="App.editBase(null)" onmouseover="this.style.borderColor=\'rgba(102,224,250,.4)\'" onmouseout="this.style.borderColor=\'rgba(96,165,215,.24)\'" style="border:1px dashed rgba(96,165,215,.24);border-radius:15px;padding:28px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:11px;cursor:pointer;min-height:230px;transition:.15s"><span style="width:48px;height:48px;border-radius:13px;background:rgba(253,86,60,.08);border:1px solid rgba(253,86,60,.24);display:flex;align-items:center;justify-content:center"><i class="ph-fill ph-plus" style="font-size:23px;color:#ff7b66"></i></span><div style="font-family:var(--font-display);font-size:15px;font-weight:600;color:#eaf3fb">Register another base</div><div style="font-size:12px;color:#8a94a6;max-width:210px;line-height:1.5">Pin it from the galaxy map or search a system, then tag its deposits.</div></div>';
+}
+function renderBasesTab(){
+  var grid=document.getElementById('basesGrid'); if(!grid) return;
+  var bs=STATE.bases||[];
+  var eb=document.getElementById('basesEyebrow'); if(eb) eb.textContent='◍ CORP BASES · '+bs.length+' REGISTERED';
+  var kb=document.getElementById('basesKpis'), al=document.getElementById('basesAlert');
+  if(!bs.length){ if(kb)kb.innerHTML=''; if(al)al.innerHTML=''; grid.style.display='block'; grid.innerHTML=emptyStateHTML({icon:'ph-planet',fg:'#ff7b66',title:'No bases yet',desc:'Register your first base — pin it from the galaxy map or search a system. Add its deposits and extractors and the whole corp shares the same live picture.',ctas:[{label:'Register base',icon:'ph-plus',primary:true,on:'App.editBase(null)'},{label:'Open map',icon:'ph-map-trifold',on:"location.href='map/'"}]}); return; }
+  grid.style.display='grid';
+  var ext=corpExtraction(); var totalOut=Object.values(ext).reduce((a,b)=>a+b,0);
+  var depNodes=bs.reduce((a,b)=>a+((b.mining&&b.mining.length)?b.mining.length:(b.deposits||[]).length),0);
+  var totalPower=bs.reduce((a,b)=>a+basePower(b),0);
+  var deficit=bs.filter(b=>basePower(b)<0).length;
+  var kpi=function(icon,accent,val,unit,label,vc){ return '<div style="position:relative;background:linear-gradient(180deg,rgba(9,20,38,.82),rgba(5,11,22,.82));border:1px solid rgba(96,165,215,.16);border-radius:12px;padding:13px 15px;overflow:hidden;display:flex;align-items:center;gap:12px"><div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,'+accent+',transparent);opacity:.7"></div><div style="width:38px;height:38px;border-radius:10px;background:'+accent+'14;border:1px solid '+accent+'38;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ph-fill '+icon+'" style="font-size:19px;color:'+accent+'"></i></div><div style="min-width:0"><div style="display:flex;align-items:baseline;gap:4px"><span style="font-family:var(--font-display);font-size:22px;font-weight:700;color:'+(vc||'#fff')+';line-height:1">'+val+'</span><span style="font-family:var(--font-mono);font-size:10px;color:#7d8ba1">'+unit+'</span></div><div style="font-family:var(--font-mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#7d8ba1;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+label+'</div></div></div>'; };
+  if(kb) kb.innerHTML=[
+    kpi('ph-planet','#66e0fa',bs.length,'','Registered bases'),
+    kpi('ph-mountains','#5fe9ce',depNodes,'nodes','Deposits worked'),
+    kpi('ph-stack','#ffd049',fmt(totalOut),'/hr','Corp output'),
+    kpi('ph-lightning',(totalPower<0?'#ff7b66':'#5fe9ce'),fmt(totalPower),'MA','Net power',(totalPower<0?'#ff9d8a':'#fff'))
+  ].join('');
+  if(al){ al.innerHTML = deficit>0 ? '<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid rgba(253,86,60,.28);background:rgba(253,86,60,.06);border-radius:12px;margin-bottom:16px"><i class="ph-fill ph-warning" style="font-size:18px;color:#ff9d8a;flex-shrink:0"></i><div style="flex:1;min-width:0"><span style="font-size:13px;font-weight:600;color:#ffcabf">'+deficit+' base'+(deficit>1?'s':'')+' running a power deficit.</span><span style="font-size:12.5px;color:#c99;margin-left:8px">Add power buildings (solar arrays, fuel plants) so extraction and machines run at full rate.</span></div></div>' : ''; }
+  grid.innerHTML = bs.map(function(b){return baseCard(b,false);}).join('') + bsRegisterCard();
+}
+
 function setDbCat(c){ const sel=$('#dbCat'); if(sel) sel.value=c; renderDb(); }
 function renderDbChips(){
   const box=document.getElementById('dbCatChips'); if(!box) return;
