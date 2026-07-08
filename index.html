@@ -2340,54 +2340,41 @@ authInit();
 #crBugNote{min-height:16px;margin-top:8px;font-size:12px;text-align:center;color:#5fe9ce}
 </style>
 <style>
-#baseDesigner{position:fixed;inset:0;z-index:240;display:none;background:radial-gradient(1100px 700px at 72% -10%,#06305c,#04101f 55%,#04060b);color:#dce6f2;flex-direction:column}
-#baseDesigner.on{display:flex}
-#bdTop{height:56px;flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 18px;background:rgba(6,13,24,.92);border-bottom:1px solid rgba(96,165,215,.16);backdrop-filter:blur(6px)}
-#bdTop .bdname{font-family:var(--font-display,sans-serif);font-weight:700;font-size:16px;color:#fff}
-#bdTop .bdeye{font-family:var(--font-mono,monospace);font-size:9px;letter-spacing:.14em;color:#66e0fa;border:1px solid rgba(102,224,250,.3);border-radius:5px;padding:2px 6px}
-#bdTop .bdbtn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:9px;background:rgba(102,224,250,.06);border:1px solid rgba(102,224,250,.22);color:#cfeefb;font-family:var(--font-mono,monospace);font-size:11px;cursor:pointer;outline:none}
-#bdTop .bdbtn:hover{border-color:rgba(102,224,250,.45)}
-#bdTop .bdbtn.act{background:rgba(102,224,250,.16);border-color:rgba(102,224,250,.5)}
-#bdBody{flex:1;position:relative;overflow:hidden}
+#baseDesigner{position:fixed;inset:0;z-index:240;display:none;background:radial-gradient(1100px 700px at 72% -10%,#06305c,#04101f 55%,#04060b);color:#dce6f2}
+#baseDesigner.on{display:block}
+#bdBody{position:absolute;inset:0;overflow:hidden}
 #bdWrap{position:absolute;inset:0;overflow:hidden;cursor:grab;background:radial-gradient(600px 340px at 40% 30%, rgba(6,48,92,.22), #070b12)}
 #bdWrap.panning{cursor:grabbing}
 #bdCanvas{position:absolute;top:0;left:0;transform-origin:0 0}
 #bdSvg{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none}
-#bdSide{position:absolute;top:14px;right:14px;width:272px;max-height:calc(100% - 28px);overflow-y:auto;z-index:6;background:linear-gradient(180deg,rgba(9,20,38,.96),rgba(5,11,22,.97));border:1px solid rgba(96,165,215,.2);border-radius:12px;box-shadow:0 12px 40px rgba(2,8,20,.6);backdrop-filter:blur(6px);padding:13px 14px;font-size:12.5px}
-#bdHint{position:absolute;left:14px;bottom:12px;z-index:5;font-family:var(--font-mono,monospace);font-size:10.5px;color:#7d8ba1;background:rgba(6,14,26,.7);border:1px solid rgba(96,165,215,.14);border-radius:9px;padding:7px 11px;max-width:340px}
-.bdnode{position:absolute;width:196px;background:linear-gradient(180deg,rgba(10,24,44,.96),rgba(6,14,26,.96));border:1px solid rgba(96,165,215,.3);border-radius:11px;box-shadow:0 6px 20px rgba(0,0,0,.4);padding:10px 12px;cursor:grab;user-select:none}
-.bdnode.sel{border-color:#66e0fa!important;box-shadow:0 0 0 1px #66e0fa inset,0 6px 20px rgba(0,0,0,.4)}
-.bdnode.warehouse{border-left:4px solid #ffd049}
-.bdnode.mining{border-left:4px solid #5fe9ce}
-.bdnode.building{border-left:4px solid #66e0fa}
-.bdnode.production{border-left:4px solid #a78bfa}
-.bdnode .bn{font-family:var(--font-display,sans-serif);font-weight:600;color:#fff;font-size:12.5px;display:flex;align-items:center;gap:6px}
-.bdnode .bn img,.bdnode .bn .tile{width:18px;height:18px;flex-shrink:0}
-.bdnode .bm{font-family:var(--font-mono,monospace);font-size:10.5px;color:#9fb0c4;margin-top:3px}
-.bdnode .bm.wh{color:#ffd049}
-.bdnode .bacts{position:absolute;top:5px;right:7px;display:flex;gap:6px;opacity:0;transition:.12s}
-.bdnode:hover .bacts{opacity:1}
-.bdnode .bact{cursor:pointer;color:#9fb0c4;font-size:12px}
-.bdnode .bact:hover{color:#fff}
-.bdnode.linksrc{outline:2px dashed #66e0fa;outline-offset:2px}
-#bdSide .bi{width:100%;margin:5px 0;padding:7px 10px;border-radius:8px;background:rgba(6,14,26,.7);border:1px solid rgba(96,165,215,.2);color:#eaf3fb;font-family:var(--font-mono,monospace);font-size:12px;outline:none}
+#bdTitle{position:absolute;top:14px;left:14px;z-index:8;display:flex;align-items:center;gap:11px;background:linear-gradient(180deg,rgba(9,20,38,.92),rgba(5,11,22,.94));border:1px solid rgba(96,165,215,.2);border-radius:11px;padding:8px 14px;box-shadow:0 8px 26px rgba(2,8,20,.5);backdrop-filter:blur(6px)}
+#bdTitle .bdeye{font-family:"Roboto Mono",monospace;font-size:9px;letter-spacing:.14em;color:#66e0fa}
+#bdTitle b{font-family:"Poppins",sans-serif;color:#fff;font-size:14px}
+#bdTitle .bdx{cursor:pointer;color:#9fb0c4;font-family:"Roboto Mono",monospace;font-size:10.5px;padding-left:8px;border-left:1px solid rgba(96,165,215,.2)}
+#bdTitle .bdx:hover{color:#ff9a88}
+#bdTools{position:absolute;top:14px;right:14px;z-index:8;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+#bdTools .ctrow{display:flex;gap:6px;background:linear-gradient(180deg,rgba(9,20,38,.92),rgba(5,11,22,.94));border:1px solid rgba(96,165,215,.2);border-radius:11px;padding:6px;box-shadow:0 8px 26px rgba(2,8,20,.5);backdrop-filter:blur(6px)}
+#bdTools .ctbtn{display:inline-flex;align-items:center;gap:5px;background:rgba(102,224,250,.06);border:1px solid rgba(102,224,250,.2);color:#cfeefb;border-radius:8px;padding:7px 11px;font-family:"Roboto Mono",monospace;font-size:11px;letter-spacing:.03em;cursor:pointer;transition:.12s;outline:none}
+#bdTools .ctbtn:hover{border-color:rgba(102,224,250,.45)}
+#bdTools .ctbtn.act{background:rgba(102,224,250,.16);border-color:rgba(102,224,250,.5)}
+#bdTools select.ctbtn{padding:7px 8px}
+#bdSide{position:absolute;top:150px;right:14px;width:272px;max-height:calc(100% - 164px);overflow-y:auto;z-index:7;background:linear-gradient(180deg,rgba(9,20,38,.96),rgba(5,11,22,.97));border:1px solid rgba(96,165,215,.2);border-radius:12px;box-shadow:0 12px 40px rgba(2,8,20,.6);backdrop-filter:blur(6px);padding:13px 14px;font-size:12.5px}
+#bdHint{position:absolute;left:14px;bottom:12px;z-index:5;font-family:"Roboto Mono",monospace;font-size:10.5px;color:#7d8ba1;background:rgba(6,14,26,.7);border:1px solid rgba(96,165,215,.14);border-radius:9px;padding:7px 11px;max-width:340px}
+.cnode.linksrc{outline:2px dashed #66e0fa;outline-offset:2px}
+#bdSide .bi{width:100%;margin:5px 0;padding:7px 10px;border-radius:8px;background:rgba(6,14,26,.7);border:1px solid rgba(96,165,215,.2);color:#eaf3fb;font-family:"Roboto Mono",monospace;font-size:12px;outline:none}
 #bdSide .birow{display:flex;gap:6px;align-items:center;margin-top:6px}
 #bdSide .whrow{display:flex;align-items:center;gap:7px;padding:5px 0;font-size:12px;color:#c7d4e2;border-bottom:1px solid rgba(96,165,215,.08)}
 </style>
 <div id="baseDesigner">
-  <div id="bdTop">
-    <span class="bdeye">BASE DESIGNER</span>
-    <span class="bdname" id="bdName">Base</span>
-    <span style="flex:1"></span>
-    <button class="bdbtn" onclick="bdFit()"><i class="ph-fill ph-arrows-out"></i> Fit</button>
-    <button class="bdbtn" onclick="bdAddWarehouse()">🏬 Warehouse</button>
-    <select class="bdbtn" id="bdAddBld" onchange="if(this.value){bdAddBuilding(this.value);this.value='';}"><option value="">🏭 + Building…</option></select>
-    <button class="bdbtn" id="bdLinkBtn" onclick="bdToggleLink()">🔗 Link</button>
-    <button class="bdbtn" onclick="closeBaseDesigner()">✕ Close</button>
-  </div>
   <div id="bdBody">
     <div id="bdWrap"><div id="bdCanvas"><svg id="bdSvg"></svg></div></div>
-    <div id="bdHint">Drag empty space to pan · scroll to zoom · drag boxes to move · click a box for details · 🔗 Link then click two boxes to connect · positions save to your corp.</div>
+    <div id="bdTitle"><span class="bdeye">🏗 BASE DESIGNER</span><b id="bdName">Base</b><span class="bdx" onclick="closeBaseDesigner()">✕ Close</span></div>
+    <div id="bdTools">
+      <div class="ctrow"><button class="ctbtn" onclick="bdArrange()">↺ Organize</button><button class="ctbtn" onclick="bdFit()">⤢ Fit</button></div>
+      <div class="ctrow"><button class="ctbtn" onclick="bdAddWarehouse()">🏬 Warehouse</button><button class="ctbtn" id="bdLinkBtn" onclick="bdToggleLink()">🔗 Link</button></div>
+      <select class="ctbtn" id="bdAddBld" style="max-width:160px" onchange="if(this.value){bdAddBuilding(this.value);this.value='';}"><option value="">🏭 + Building…</option></select>
+    </div>
+    <div id="bdHint">Drag empty space to pan · scroll to zoom · drag boxes to move · click a box for details · 🔗 Link then click two boxes · positions save to your corp.</div>
     <div id="bdSide"></div>
   </div>
 </div>
@@ -2430,30 +2417,30 @@ function bdSave(){ var d=bdDesign(); if(!d) return; if(window.CORP && typeof pus
 
 function bdNodeInner(n){
   if(n.kind==='mining'){ var res=bdMineRes(n.slug); var y=bdMineYield(n.slug,n.n); var top=y.sort(function(a,b){return b.rate-a.rate;})[0];
-    return '<div class="bn">⛏ '+esc(res?res.name:n.slug)+'</div><div class="bm">'+ (n.n||1)+'× '+esc(wsName('b-extractor'))+(top?' · '+fmt(top.rate)+'/h '+esc(itemName(top.slug)):'')+'</div>'; }
+    return '<div class="nm">⛏ '+esc(res?res.name:n.slug)+'</div><div class="meta">'+ (n.n||1)+'× '+esc(wsName('b-extractor'))+(top?' · '+fmt(top.rate)+'/h '+esc(itemName(top.slug)):'')+'</div>'; }
   if(n.kind==='building'){ var bd=BLD[n.slug]||{}; var p=num(bd.power)*(n.count||1);
-    return '<div class="bn">'+ico(n.slug,'sm')+esc(bd.name||n.slug)+'</div><div class="bm">×'+(n.count||1)+(p?' · '+(p>0?'+':'')+fmt(p)+' MA':'')+(num(bd.footprint)?' · '+fmt(num(bd.footprint)*(n.count||1))+' FP':'')+'</div>'; }
-  if(n.kind==='production'){ return '<div class="bn">'+ico(n.slug,'sm')+esc(itemName(n.slug))+'</div><div class="bm">'+(n.machines||1)+'× machine · '+fmt(n.rate||0)+'/h</div>'; }
+    return '<div class="nm">'+ico(n.slug,'sm')+esc(bd.name||n.slug)+'</div><div class="meta">×'+(n.count||1)+(p?' · '+(p>0?'+':'')+fmt(p)+' MA':'')+(num(bd.footprint)?' · '+fmt(num(bd.footprint)*(n.count||1))+' FP':'')+'</div>'; }
+  if(n.kind==='production'){ return '<div class="nm">'+ico(n.slug,'sm')+esc(itemName(n.slug))+'</div><div class="meta">'+(n.machines||1)+'× machine · '+fmt(n.rate||0)+'/h</div>'; }
   // warehouse
   var cnt=(n.items||[]).length, tot=(n.items||[]).reduce(function(a,i){return a+(i.qty||0);},0);
-  return '<div class="bn">🏬 '+esc(n.name||'Warehouse')+'</div><div class="bm wh">'+cnt+' item type'+(cnt!==1?'s':'')+(tot?' · '+fmt(tot)+' stored':'')+'</div>';
+  return '<div class="nm">🏬 '+esc(n.name||'Warehouse')+'</div><div class="meta" style="color:#ffd049">'+cnt+' item type'+(cnt!==1?'s':'')+(tot?' · '+fmt(tot)+' stored':'')+'</div>';
 }
 function bdRender(){
   var d=bdDesign(); var cv=document.getElementById('bdCanvas'); if(!cv||!d) return;
-  cv.querySelectorAll('.bdnode').forEach(function(el){el.remove();});
-  var maxX=600, maxY=400;
+  cv.querySelectorAll('.cnode').forEach(function(el){el.remove();});
+  var maxX=600, maxY=400; var COL={warehouse:'#ffd049',mining:'#5fe9ce',building:'#66e0fa',production:'#a78bfa'};
   d.nodes.forEach(function(n){
-    var el=document.createElement('div'); el.className='bdnode '+n.kind+(BD_SEL===n.id?' sel':''); el.setAttribute('data-bd', n.id);
-    el.style.left=(n.x||40)+'px'; el.style.top=(n.y||40)+'px';
-    el.innerHTML='<div class="bacts"><span class="bact" title="Duplicate" onclick="event.stopPropagation();bdCloneNode(&quot;'+n.id+'&quot;)">⧉</span><span class="bact" title="Delete" onclick="event.stopPropagation();bdDeleteNode(&quot;'+n.id+'&quot;)">🗑</span></div>'+bdNodeInner(n);
+    var el=document.createElement('div'); el.className='cnode'+(BD_SEL===n.id?' sel':''); el.setAttribute('data-bd', n.id);
+    el.style.left=(n.x||40)+'px'; el.style.top=(n.y||40)+'px'; el.style.borderLeft='4px solid '+(COL[n.kind]||'#66e0fa');
+    el.innerHTML='<div class="nodeacts"><span class="nact" title="Duplicate" onclick="event.stopPropagation();bdCloneNode(&quot;'+n.id+'&quot;)">⧉</span><span class="nact" title="Delete" onclick="event.stopPropagation();bdDeleteNode(&quot;'+n.id+'&quot;)">🗑</span></div>'+bdNodeInner(n);
     cv.appendChild(el); bdDrag(el, n);
-    maxX=Math.max(maxX,(n.x||0)+260); maxY=Math.max(maxY,(n.y||0)+180);
+    maxX=Math.max(maxX,(n.x||0)+280); maxY=Math.max(maxY,(n.y||0)+180);
   });
   cv.style.width=maxX+'px'; cv.style.height=maxY+'px';
   bdApplyTransform(); bdRedraw(); bdRenderSide();
 }
 function bdApplyTransform(){ var cv=document.getElementById('bdCanvas'); if(cv) cv.style.transform='translate('+BD_PANX+'px,'+BD_PANY+'px) scale('+BD_SCALE+')'; }
-function bdCenter(n){ return {x:(n.x||0)+98, y:(n.y||0)+34}; }
+function bdCenter(n){ return {x:(n.x||0)+108, y:(n.y||0)+38}; }
 function bdRedraw(){
   var d=bdDesign(), sv=document.getElementById('bdSvg'); if(!sv||!d) return;
   var byId={}; d.nodes.forEach(function(n){byId[n.id]=n;});
@@ -2472,8 +2459,8 @@ function bdDrag(el, n){
     el.addEventListener('pointermove',mv); el.addEventListener('pointerup',up);
   });
 }
-function bdSelect(id){ BD_SEL=id; document.querySelectorAll('.bdnode').forEach(function(el){ el.classList.toggle('sel', el.getAttribute('data-bd')===id); }); bdRenderSide(); }
-function bdDeselect(){ BD_SEL=null; document.querySelectorAll('.bdnode.sel').forEach(function(el){el.classList.remove('sel');}); bdRenderSide(); }
+function bdSelect(id){ BD_SEL=id; document.querySelectorAll('#bdCanvas .cnode').forEach(function(el){ el.classList.toggle('sel', el.getAttribute('data-bd')===id); }); bdRenderSide(); }
+function bdDeselect(){ BD_SEL=null; document.querySelectorAll('#bdCanvas .cnode.sel').forEach(function(el){el.classList.remove('sel');}); bdRenderSide(); }
 
 function bdPower(b){ var gen=0,use=0;
   (b.buildings||[]).forEach(function(x){ var p=num(BLD[x.slug]&&BLD[x.slug].power)*(x.count||1); if(p>0) gen+=p; else use+=-p; });
@@ -2542,9 +2529,10 @@ function bdSetMining(id,v){ var d=bdDesign(); var n=(d.nodes||[]).find(function(
 function bdWhAdd(id){ var d=bdDesign(); var n=(d.nodes||[]).find(function(x){return x.id===id;}); if(!n) return; var name=(document.getElementById('bdWhItem').value||'').trim(); var qty=Math.max(1,parseInt(document.getElementById('bdWhQty').value)||1); var it=GAME.items.find(function(i){return i.name.toLowerCase()===name.toLowerCase();})||GAME.resources.find(function(r){return r.name.toLowerCase()===name.toLowerCase();}); if(!it){ alert('Item not found: '+name); return; } n.items=n.items||[]; var ex=n.items.find(function(x){return x.slug===it.slug;}); if(ex) ex.qty+=qty; else n.items.push({slug:it.slug, qty:qty}); bdSave(); bdRender(); bdSelect(id); }
 function bdWhRemove(id,i){ var d=bdDesign(); var n=(d.nodes||[]).find(function(x){return x.id===id;}); if(n&&n.items){ n.items.splice(i,1); bdSave(); bdRender(); bdSelect(id); } }
 function bdWhRename(id,v){ var d=bdDesign(); var n=(d.nodes||[]).find(function(x){return x.id===id;}); if(n){ n.name=v||'Warehouse'; bdSave(); bdRender(); bdSelect(id); } }
-function bdToggleLink(){ BD_LINKING=!BD_LINKING; BD_LINKSRC=null; var btn=document.getElementById('bdLinkBtn'); if(btn) btn.classList.toggle('act', BD_LINKING); document.querySelectorAll('.bdnode.linksrc').forEach(function(el){el.classList.remove('linksrc');}); }
-function bdLinkClick(id){ if(!BD_LINKSRC){ BD_LINKSRC=id; var el=document.querySelector('.bdnode[data-bd="'+id+'"]'); if(el) el.classList.add('linksrc'); return; } if(BD_LINKSRC===id){ bdToggleLink(); return; } var d=bdDesign(); d.links=d.links||[]; if(!d.links.some(function(l){return (l.a===BD_LINKSRC&&l.b===id)||(l.a===id&&l.b===BD_LINKSRC);})) d.links.push({a:BD_LINKSRC, b:id}); BD_LINKSRC=null; bdToggleLink(); bdSave(); bdRender(); }
+function bdToggleLink(){ BD_LINKING=!BD_LINKING; BD_LINKSRC=null; var btn=document.getElementById('bdLinkBtn'); if(btn) btn.classList.toggle('act', BD_LINKING); document.querySelectorAll('#bdCanvas .cnode.linksrc').forEach(function(el){el.classList.remove('linksrc');}); }
+function bdLinkClick(id){ if(!BD_LINKSRC){ BD_LINKSRC=id; var el=document.querySelector('#bdCanvas .cnode[data-bd="'+id+'"]'); if(el) el.classList.add('linksrc'); return; } if(BD_LINKSRC===id){ bdToggleLink(); return; } var d=bdDesign(); d.links=d.links||[]; if(!d.links.some(function(l){return (l.a===BD_LINKSRC&&l.b===id)||(l.a===id&&l.b===BD_LINKSRC);})) d.links.push({a:BD_LINKSRC, b:id}); BD_LINKSRC=null; bdToggleLink(); bdSave(); bdRender(); }
 function bdFit(){ var wrap=document.getElementById('bdWrap'), cv=document.getElementById('bdCanvas'); if(!wrap||!cv) return; var W=cv.offsetWidth||600, H=cv.offsetHeight||400; var ww=wrap.clientWidth-300, wh=wrap.clientHeight-40; var k=Math.min(ww/W, wh/H, 1.2); if(!isFinite(k)||k<=0) k=1; BD_SCALE=Math.max(0.3,k); BD_PANX=30; BD_PANY=30; bdApplyTransform(); }
+function bdArrange(){ var d=bdDesign(); if(!d) return; var cols={mining:0,building:1,production:2,warehouse:3}; var ny=[60,60,60,60]; var COLW=270; d.nodes.forEach(function(n){ var col=(cols[n.kind]!=null)?cols[n.kind]:1; n.x=40+col*COLW; n.y=ny[col]; ny[col]+=120; }); bdSave(); bdRender(); setTimeout(bdFit,40); }
 function bdBind(){ if(BD_BOUND) return; BD_BOUND=true; var wrap=document.getElementById('bdWrap'); if(!wrap) return;
   wrap.addEventListener('wheel', function(e){ e.preventDefault(); var r=wrap.getBoundingClientRect(); var mx=e.clientX-r.left, my=e.clientY-r.top; var old=BD_SCALE; var ns=Math.max(0.2,Math.min(2.2, old*(e.deltaY<0?1.12:0.89))); BD_PANX=mx-(mx-BD_PANX)*(ns/old); BD_PANY=my-(my-BD_PANY)*(ns/old); BD_SCALE=ns; bdApplyTransform(); }, {passive:false});
   wrap.addEventListener('pointerdown', function(ev){ if(ev.target.closest('.bdnode')) return; if(ev.button!==0 && ev.button!==2) return; if(BD_LINKING){ return; } ev.preventDefault(); wrap.classList.add('panning'); var lx=ev.clientX, ly=ev.clientY, moved=false; var mv=function(e){ if(Math.abs(e.clientX-lx)>3||Math.abs(e.clientY-ly)>3)moved=true; BD_PANX+=(e.clientX-lx); BD_PANY+=(e.clientY-ly); lx=e.clientX; ly=e.clientY; bdApplyTransform(); }; var up=function(){ wrap.classList.remove('panning'); window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); if(!moved) bdDeselect(); }; window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up); });
