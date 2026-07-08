@@ -948,16 +948,27 @@ function baseCard(b, compact){
   const loc = [b.quadrant,b.system,b.planet].filter(Boolean).join(' › ');
   const deps = (b.deposits||[]).map(d=>`<span class="chip">${ico(d.slug,'sm')}${esc(RES[d.slug]?RES[d.slug].name:d.slug)} ×${d.count}</span>`).join('');
   const blds = (b.buildings||[]).map(d=>`<span class="chip">${ico(d.slug,'sm')}${esc(BLD[d.slug]?BLD[d.slug].name:d.slug)} ×${d.count}</span>`).join('');
-  return `<div class="card">
-    <h3 style="display:flex;align-items:center;gap:8px"><span class="pointer" style="flex:1" onclick="App.editBase('${b.id}')">${esc(b.name)} <span class="muted small">✎</span></span><span class="pointer" title="Base Designer" style="font-size:14px;margin-right:2px" onclick="event.stopPropagation();openBaseDesigner('${b.id}')">🏗</span><span class="pointer" title="delete base" style="color:var(--bad);font-size:15px" onclick="event.stopPropagation();App.removeBase('${b.id}')">🗑</span></h3>
-    <div class="muted small">${b.type?(b.type==='personal'?'⛺ personal':'🏠 corp')+' · ':''}${esc(loc||'location unknown')} ${b.owner?'· '+esc(b.owner):''}</div>
-    ${b.coords?`<div class="muted small">📍 ${esc(b.coords)}</div>`:''}
-    <div class="row small"><span class="muted">Power</span> <span class="${p>=0?'raw':'chip bad'}">${fmt(p)}</span></div>
-    ${(b.production&&b.production.length)?`<div class="flexwrap" style="margin-top:6px">${b.production.map(pr=>`<span class="chip" style="color:var(--accent)">${ico(pr.slug,'sm')}${esc(itemName(pr.slug))} ${fmt(pr.rate)}/h <span class="pointer" title="remove" onclick="event.stopPropagation();unassignProduction('${b.id}','${pr.slug}')">✕</span></span>`).join('')}</div>`:''}
-    ${(b.mining&&b.mining.length)?`<div class="flexwrap" style="margin-top:6px">${b.mining.map(m=>{const mid=typeof m==='string'?m:m.id; const mn=typeof m==='string'?1:(m.n||1); return `<span class="chip ok">${icoRes(mid,'sm')}${esc(String(mid).replace(/_/g,' ').replace(/([a-z])([A-Z])/g,'$1 $2'))}${mn>1?' ×'+mn:''}</span>`;}).join('')}</div>`:''}
-    ${deps?`<div class="flexwrap" style="margin-top:6px">${deps}</div>`:''}
-    ${!compact&&blds?`<div class="flexwrap" style="margin-top:6px">${blds}</div>`:''}
-    ${!compact&&b.notes?`<div class="muted small" style="margin-top:6px">${esc(b.notes)}</div>`:''}
+  const prod = (b.production&&b.production.length)?`<div class="flexwrap" style="margin-top:8px">${b.production.map(pr=>`<span class="chip" style="color:var(--accent)">${ico(pr.slug,'sm')}${esc(itemName(pr.slug))} ${fmt(pr.rate)}/h <span class="pointer" title="remove" onclick="event.stopPropagation();unassignProduction('${b.id}','${pr.slug}')">✕</span></span>`).join('')}</div>`:'';
+  const mine = (b.mining&&b.mining.length)?`<div class="flexwrap" style="margin-top:8px">${b.mining.map(m=>{const mid=typeof m==='string'?m:m.id; const mn=typeof m==='string'?1:(m.n||1); return `<span class="chip ok">${icoRes(mid,'sm')}${esc(String(mid).replace(/_/g,' ').replace(/([a-z])([A-Z])/g,'$1 $2'))}${mn>1?' ×'+mn:''}</span>`;}).join('')}</div>`:'';
+  return `<div class="card" style="display:flex;flex-direction:column">
+    <div style="display:flex;align-items:flex-start;gap:11px">
+      <span style="width:38px;height:38px;flex-shrink:0;border-radius:11px;background:rgba(102,224,250,.08);border:1px solid rgba(102,224,250,.22);display:flex;align-items:center;justify-content:center;font-size:18px">${b.type==='personal'?'⛺':'🏠'}</span>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b class="pointer" style="font-family:var(--font-display);font-size:15px;color:#fff" title="open Base Designer" onclick="openBaseDesigner('${b.id}')">${esc(b.name)}</b>${b.type?`<span class="pill2 ${b.type==='personal'?'':'ok'}" style="font-size:9px;letter-spacing:.08em">${b.type==='personal'?'PERSONAL':'CORP'}</span>`:''}</div>
+        <div class="muted small" style="margin-top:3px">📍 ${esc(loc||'location unknown')}${b.owner?' · '+esc(b.owner):''}</div>
+        ${b.coords?`<div class="muted small">${esc(b.coords)}</div>`:''}
+      </div>
+      <span style="font-family:var(--font-mono);font-size:11px;color:${p>=0?'#5fe9ce':'#ff7a7a'};white-space:nowrap;padding-top:3px">⚡ ${fmt(p)}</span>
+    </div>
+    ${prod}${mine}
+    ${deps?`<div class="flexwrap" style="margin-top:8px">${deps}</div>`:''}
+    ${!compact&&blds?`<div class="flexwrap" style="margin-top:8px">${blds}</div>`:''}
+    ${!compact&&b.notes?`<div class="muted small" style="margin-top:8px">${esc(b.notes)}</div>`:''}
+    <div class="row" style="margin-top:14px;gap:8px;align-items:center">
+      <button class="btn" style="flex:1;justify-content:center" onclick="openBaseDesigner('${b.id}')">🏗 Base Designer</button>
+      <button class="btn sec" onclick="App.editBase('${b.id}')" title="Edit details">✎ Edit</button>
+      <button class="btn sec" style="color:var(--bad);border-color:rgba(255,122,122,.4)" onclick="App.removeBase('${b.id}')" title="Delete base">🗑</button>
+    </div>
   </div>`;
 }
 function setDbCat(c){ const sel=$('#dbCat'); if(sel) sel.value=c; renderDb(); }
