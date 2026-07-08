@@ -920,7 +920,7 @@ function baseCard(b, compact){
   const deps = (b.deposits||[]).map(d=>`<span class="chip">${ico(d.slug,'sm')}${esc(RES[d.slug]?RES[d.slug].name:d.slug)} ×${d.count}</span>`).join('');
   const blds = (b.buildings||[]).map(d=>`<span class="chip">${ico(d.slug,'sm')}${esc(BLD[d.slug]?BLD[d.slug].name:d.slug)} ×${d.count}</span>`).join('');
   return `<div class="card">
-    <h3 style="display:flex;align-items:center;gap:8px"><span class="pointer" style="flex:1" onclick="App.editBase('${b.id}')">${esc(b.name)} <span class="muted small">✎</span></span><span class="pointer" title="delete base" style="color:var(--bad);font-size:15px" onclick="event.stopPropagation();App.removeBase('${b.id}')">🗑</span></h3>
+    <h3 style="display:flex;align-items:center;gap:8px"><span class="pointer" style="flex:1" onclick="App.editBase('${b.id}')">${esc(b.name)} <span class="muted small">✎</span></span><span class="pointer" title="Base Designer" style="font-size:14px;margin-right:2px" onclick="event.stopPropagation();openBaseDesigner('${b.id}')">🏗</span><span class="pointer" title="delete base" style="color:var(--bad);font-size:15px" onclick="event.stopPropagation();App.removeBase('${b.id}')">🗑</span></h3>
     <div class="muted small">${b.type?(b.type==='personal'?'⛺ personal':'🏠 corp')+' · ':''}${esc(loc||'location unknown')} ${b.owner?'· '+esc(b.owner):''}</div>
     ${b.coords?`<div class="muted small">📍 ${esc(b.coords)}</div>`:''}
     <div class="row small"><span class="muted">Power</span> <span class="${p>=0?'raw':'chip bad'}">${fmt(p)}</span></div>
@@ -1662,7 +1662,7 @@ function openInspector(key){
     var _h='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-family:var(--font-mono);font-size:9px;letter-spacing:.16em;color:#66e0fa">◍ '+(_kind==='mine'?'MINING NODE':'CORP BASE')+'</span><span onclick="closeInspector()" style="cursor:pointer;color:#9fb0c4;font-size:14px">✕</span></div>';
     var _bd='<div style="font-family:var(--font-display);font-weight:600;color:#fff;font-size:15px">'+(_kind==='mine'?'⛏ ':'🏠 ')+esc(_title)+'</div>';
     if(_kind==='mine'){ var _slug=key.slice('infra:mine:'.length).split('::')[1]; _bd+='<div style="margin-top:8px;font-size:12px;color:#c7d4e2">Extracts <b style="color:#eaf3fb">'+esc(itemName(_slug))+'</b></div>'; }
-    _bd+='<div style="display:flex;gap:7px;margin-top:16px">'+(_b?'<button class="ib" onclick="closeInspector();App.editBase(&quot;'+_b.id+'&quot;)">✎ Edit base</button>':'')+'<button class="ib del" onclick="chainHideNode(&quot;'+key+'&quot;)">🗑 Remove from chain</button></div>';
+    _bd+='<div style="display:flex;gap:7px;margin-top:16px;flex-wrap:wrap">'+(_b?'<button class="ib" onclick="closeInspector();openBaseDesigner(&quot;'+_b.id+'&quot;)">🏗 Base Designer</button><button class="ib" onclick="closeInspector();App.editBase(&quot;'+_b.id+'&quot;)">✎ Edit base</button>':'')+'<button class="ib del" onclick="chainHideNode(&quot;'+key+'&quot;)">🗑 Remove</button></div>';
     el.innerHTML=_h+_bd; el.style.display='block';
     var _se=document.querySelector('.cnode[data-cslug="'+key+'"]'); if(_se){ document.querySelectorAll('.cnode.inspected').forEach(function(x){x.classList.remove('inspected');}); _se.classList.add('inspected'); }
     return;
@@ -2339,6 +2339,218 @@ authInit();
 #crBugSend[disabled]{opacity:.6;cursor:default}
 #crBugNote{min-height:16px;margin-top:8px;font-size:12px;text-align:center;color:#5fe9ce}
 </style>
+<style>
+#baseDesigner{position:fixed;inset:0;z-index:240;display:none;background:radial-gradient(1100px 700px at 72% -10%,#06305c,#04101f 55%,#04060b);color:#dce6f2;flex-direction:column}
+#baseDesigner.on{display:flex}
+#bdTop{height:56px;flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 18px;background:rgba(6,13,24,.92);border-bottom:1px solid rgba(96,165,215,.16);backdrop-filter:blur(6px)}
+#bdTop .bdname{font-family:var(--font-display,sans-serif);font-weight:700;font-size:16px;color:#fff}
+#bdTop .bdeye{font-family:var(--font-mono,monospace);font-size:9px;letter-spacing:.14em;color:#66e0fa;border:1px solid rgba(102,224,250,.3);border-radius:5px;padding:2px 6px}
+#bdTop .bdbtn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:9px;background:rgba(102,224,250,.06);border:1px solid rgba(102,224,250,.22);color:#cfeefb;font-family:var(--font-mono,monospace);font-size:11px;cursor:pointer;outline:none}
+#bdTop .bdbtn:hover{border-color:rgba(102,224,250,.45)}
+#bdTop .bdbtn.act{background:rgba(102,224,250,.16);border-color:rgba(102,224,250,.5)}
+#bdBody{flex:1;position:relative;overflow:hidden}
+#bdWrap{position:absolute;inset:0;overflow:hidden;cursor:grab;background:radial-gradient(600px 340px at 40% 30%, rgba(6,48,92,.22), #070b12)}
+#bdWrap.panning{cursor:grabbing}
+#bdCanvas{position:absolute;top:0;left:0;transform-origin:0 0}
+#bdSvg{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+#bdSide{position:absolute;top:14px;right:14px;width:272px;max-height:calc(100% - 28px);overflow-y:auto;z-index:6;background:linear-gradient(180deg,rgba(9,20,38,.96),rgba(5,11,22,.97));border:1px solid rgba(96,165,215,.2);border-radius:12px;box-shadow:0 12px 40px rgba(2,8,20,.6);backdrop-filter:blur(6px);padding:13px 14px;font-size:12.5px}
+#bdHint{position:absolute;left:14px;bottom:12px;z-index:5;font-family:var(--font-mono,monospace);font-size:10.5px;color:#7d8ba1;background:rgba(6,14,26,.7);border:1px solid rgba(96,165,215,.14);border-radius:9px;padding:7px 11px;max-width:340px}
+.bdnode{position:absolute;width:196px;background:linear-gradient(180deg,rgba(10,24,44,.96),rgba(6,14,26,.96));border:1px solid rgba(96,165,215,.3);border-radius:11px;box-shadow:0 6px 20px rgba(0,0,0,.4);padding:10px 12px;cursor:grab;user-select:none}
+.bdnode.sel{border-color:#66e0fa!important;box-shadow:0 0 0 1px #66e0fa inset,0 6px 20px rgba(0,0,0,.4)}
+.bdnode.warehouse{border-left:4px solid #ffd049}
+.bdnode.mining{border-left:4px solid #5fe9ce}
+.bdnode.building{border-left:4px solid #66e0fa}
+.bdnode.production{border-left:4px solid #a78bfa}
+.bdnode .bn{font-family:var(--font-display,sans-serif);font-weight:600;color:#fff;font-size:12.5px;display:flex;align-items:center;gap:6px}
+.bdnode .bn img,.bdnode .bn .tile{width:18px;height:18px;flex-shrink:0}
+.bdnode .bm{font-family:var(--font-mono,monospace);font-size:10.5px;color:#9fb0c4;margin-top:3px}
+.bdnode .bm.wh{color:#ffd049}
+.bdnode .bacts{position:absolute;top:5px;right:7px;display:flex;gap:6px;opacity:0;transition:.12s}
+.bdnode:hover .bacts{opacity:1}
+.bdnode .bact{cursor:pointer;color:#9fb0c4;font-size:12px}
+.bdnode .bact:hover{color:#fff}
+.bdnode.linksrc{outline:2px dashed #66e0fa;outline-offset:2px}
+#bdSide .bi{width:100%;margin:5px 0;padding:7px 10px;border-radius:8px;background:rgba(6,14,26,.7);border:1px solid rgba(96,165,215,.2);color:#eaf3fb;font-family:var(--font-mono,monospace);font-size:12px;outline:none}
+#bdSide .birow{display:flex;gap:6px;align-items:center;margin-top:6px}
+#bdSide .whrow{display:flex;align-items:center;gap:7px;padding:5px 0;font-size:12px;color:#c7d4e2;border-bottom:1px solid rgba(96,165,215,.08)}
+</style>
+<div id="baseDesigner">
+  <div id="bdTop">
+    <span class="bdeye">BASE DESIGNER</span>
+    <span class="bdname" id="bdName">Base</span>
+    <span style="flex:1"></span>
+    <button class="bdbtn" onclick="bdFit()"><i class="ph-fill ph-arrows-out"></i> Fit</button>
+    <button class="bdbtn" onclick="bdAddWarehouse()">🏬 Warehouse</button>
+    <select class="bdbtn" id="bdAddBld" onchange="if(this.value){bdAddBuilding(this.value);this.value='';}"><option value="">🏭 + Building…</option></select>
+    <button class="bdbtn" id="bdLinkBtn" onclick="bdToggleLink()">🔗 Link</button>
+    <button class="bdbtn" onclick="closeBaseDesigner()">✕ Close</button>
+  </div>
+  <div id="bdBody">
+    <div id="bdWrap"><div id="bdCanvas"><svg id="bdSvg"></svg></div></div>
+    <div id="bdHint">Drag empty space to pan · scroll to zoom · drag boxes to move · click a box for details · 🔗 Link then click two boxes to connect · positions save to your corp.</div>
+    <div id="bdSide"></div>
+  </div>
+</div>
+<script>
+/* ============ BASE DESIGNER (Phase 2) — logical per-base layout ============ */
+let BD_CUR=null, BD_SCALE=1, BD_PANX=30, BD_PANY=30, BD_SEL=null, BD_LINKING=false, BD_LINKSRC=null, BD_BOUND=false;
+function bdBase(){ return (STATE.bases||[]).find(function(b){return b.id===BD_CUR;}); }
+function bdKey(){ return 'base:'+BD_CUR; }
+function bdDesign(){ STATE.layouts=STATE.layouts||{}; return STATE.layouts[bdKey()]; }
+function bdNorm(x){ return String(x).replace(/[-_]/g,'').toLowerCase(); }
+function bdMineRes(id){ return GAME.resources.find(function(r){return bdNorm(r.slug)===bdNorm(id);}); }
+function bdMineYield(id,n){ var res=bdMineRes(id); if(!res) return []; return (res.drops||[]).filter(function(d){return d.rate&&String(d.rate).includes('/h');}).map(function(d){return {slug:d.slug, rate:parseFloat(d.rate)*(n||1)};}); }
+
+function openBaseDesigner(id){
+  BD_CUR=id; var b=bdBase(); if(!b){ alert('Base not found'); return; }
+  BD_SEL=null; BD_LINKING=false; BD_LINKSRC=null;
+  document.getElementById('bdName').textContent=b.name||'Base';
+  // building palette
+  var sel=document.getElementById('bdAddBld');
+  if(sel && sel.options.length<=1){ sel.innerHTML='<option value="">🏭 + Building…</option>'+GAME.buildings.slice().sort(function(a,b){return String(a.name).localeCompare(String(b.name));}).map(function(x){return '<option value="'+x.slug+'">'+esc(x.name)+'</option>';}).join(''); }
+  var d=bdDesign();
+  if(!d || !d.nodes || !d.nodes.length){ d=bdAuto(b); STATE.layouts[bdKey()]=d; }
+  BD_SCALE=1; BD_PANX=30; BD_PANY=30;
+  document.getElementById('baseDesigner').classList.add('on');
+  bdBind(); bdRender(); setTimeout(bdFit,60);
+  try{ if(window.logEvent) logEvent('basedesigner', b.name||''); }catch(e){}
+}
+function closeBaseDesigner(){ document.getElementById('baseDesigner').classList.remove('on'); }
+
+function bdAuto(b){
+  var nodes=[], id=0; var COLW=250, gap=118;
+  var my=40; (b.mining||[]).forEach(function(m){ var mid=typeof m==='string'?m:m.id; var n=typeof m==='string'?1:(m.n||1); nodes.push({id:'n'+(id++), kind:'mining', slug:mid, n:n, x:40, y:my}); my+=gap; });
+  var by=40; (b.buildings||[]).forEach(function(x){ nodes.push({id:'n'+(id++), kind:'building', slug:x.slug, count:x.count||1, x:40+COLW, y:by}); by+=gap; });
+  var py=40; (b.production||[]).forEach(function(pr){ nodes.push({id:'n'+(id++), kind:'production', slug:pr.slug, rate:pr.rate||0, machines:pr.machines||1, x:40+COLW*2, y:py}); py+=gap; });
+  if(!nodes.length){ nodes.push({id:'n0', kind:'warehouse', name:'Main Warehouse', items:[], x:60, y:60}); }
+  return {nodes:nodes, links:[]};
+}
+function bdSave(){ var d=bdDesign(); if(!d) return; if(window.CORP && typeof pushPlan==='function') pushPlan(); }
+
+function bdNodeInner(n){
+  if(n.kind==='mining'){ var res=bdMineRes(n.slug); var y=bdMineYield(n.slug,n.n); var top=y.sort(function(a,b){return b.rate-a.rate;})[0];
+    return '<div class="bn">⛏ '+esc(res?res.name:n.slug)+'</div><div class="bm">'+ (n.n||1)+'× '+esc(wsName('b-extractor'))+(top?' · '+fmt(top.rate)+'/h '+esc(itemName(top.slug)):'')+'</div>'; }
+  if(n.kind==='building'){ var bd=BLD[n.slug]||{}; var p=num(bd.power)*(n.count||1);
+    return '<div class="bn">'+ico(n.slug,'sm')+esc(bd.name||n.slug)+'</div><div class="bm">×'+(n.count||1)+(p?' · '+(p>0?'+':'')+fmt(p)+' MA':'')+(num(bd.footprint)?' · '+fmt(num(bd.footprint)*(n.count||1))+' FP':'')+'</div>'; }
+  if(n.kind==='production'){ return '<div class="bn">'+ico(n.slug,'sm')+esc(itemName(n.slug))+'</div><div class="bm">'+(n.machines||1)+'× machine · '+fmt(n.rate||0)+'/h</div>'; }
+  // warehouse
+  var cnt=(n.items||[]).length, tot=(n.items||[]).reduce(function(a,i){return a+(i.qty||0);},0);
+  return '<div class="bn">🏬 '+esc(n.name||'Warehouse')+'</div><div class="bm wh">'+cnt+' item type'+(cnt!==1?'s':'')+(tot?' · '+fmt(tot)+' stored':'')+'</div>';
+}
+function bdRender(){
+  var d=bdDesign(); var cv=document.getElementById('bdCanvas'); if(!cv||!d) return;
+  cv.querySelectorAll('.bdnode').forEach(function(el){el.remove();});
+  var maxX=600, maxY=400;
+  d.nodes.forEach(function(n){
+    var el=document.createElement('div'); el.className='bdnode '+n.kind+(BD_SEL===n.id?' sel':''); el.setAttribute('data-bd', n.id);
+    el.style.left=(n.x||40)+'px'; el.style.top=(n.y||40)+'px';
+    el.innerHTML='<div class="bacts"><span class="bact" title="Duplicate" onclick="event.stopPropagation();bdCloneNode(&quot;'+n.id+'&quot;)">⧉</span><span class="bact" title="Delete" onclick="event.stopPropagation();bdDeleteNode(&quot;'+n.id+'&quot;)">🗑</span></div>'+bdNodeInner(n);
+    cv.appendChild(el); bdDrag(el, n);
+    maxX=Math.max(maxX,(n.x||0)+260); maxY=Math.max(maxY,(n.y||0)+180);
+  });
+  cv.style.width=maxX+'px'; cv.style.height=maxY+'px';
+  bdApplyTransform(); bdRedraw(); bdRenderSide();
+}
+function bdApplyTransform(){ var cv=document.getElementById('bdCanvas'); if(cv) cv.style.transform='translate('+BD_PANX+'px,'+BD_PANY+'px) scale('+BD_SCALE+')'; }
+function bdCenter(n){ return {x:(n.x||0)+98, y:(n.y||0)+34}; }
+function bdRedraw(){
+  var d=bdDesign(), sv=document.getElementById('bdSvg'); if(!sv||!d) return;
+  var byId={}; d.nodes.forEach(function(n){byId[n.id]=n;});
+  var svg='';
+  (d.links||[]).forEach(function(l){ var a=byId[l.a], b=byId[l.b]; if(!a||!b) return; var pa=bdCenter(a), pb=bdCenter(b); var mx=(pa.x+pb.x)/2; svg+='<path d="M'+pa.x+','+pa.y+' C'+mx+','+pa.y+' '+mx+','+pb.y+' '+pb.x+','+pb.y+'" fill="none" stroke="#5fe9ce" stroke-width="1.8" stroke-dasharray="5 4" opacity="0.8"/>'; });
+  sv.innerHTML=svg;
+}
+function bdDrag(el, n){
+  el.addEventListener('pointerdown', function(ev){
+    if(ev.button!==0 || ev.target.closest('.bact')) return;
+    if(BD_LINKING){ ev.preventDefault(); ev.stopPropagation(); bdLinkClick(n.id); return; }
+    ev.preventDefault(); ev.stopPropagation(); el.setPointerCapture(ev.pointerId); el.style.zIndex=50;
+    var sx=ev.clientX, sy=ev.clientY, ox=n.x||0, oy=n.y||0, moved=false;
+    var mv=function(e){ if(Math.abs(e.clientX-sx)>3||Math.abs(e.clientY-sy)>3) moved=true; n.x=ox+(e.clientX-sx)/BD_SCALE; n.y=oy+(e.clientY-sy)/BD_SCALE; el.style.left=n.x+'px'; el.style.top=n.y+'px'; bdRedraw(); };
+    var up=function(e){ el.releasePointerCapture(ev.pointerId); el.style.zIndex=''; el.removeEventListener('pointermove',mv); el.removeEventListener('pointerup',up); if(!moved){ bdSelect(n.id); } else { n.x=Math.round(n.x); n.y=Math.round(n.y); bdSave(); } };
+    el.addEventListener('pointermove',mv); el.addEventListener('pointerup',up);
+  });
+}
+function bdSelect(id){ BD_SEL=id; document.querySelectorAll('.bdnode').forEach(function(el){ el.classList.toggle('sel', el.getAttribute('data-bd')===id); }); bdRenderSide(); }
+function bdDeselect(){ BD_SEL=null; document.querySelectorAll('.bdnode.sel').forEach(function(el){el.classList.remove('sel');}); bdRenderSide(); }
+
+function bdPower(b){ var gen=0,use=0;
+  (b.buildings||[]).forEach(function(x){ var p=num(BLD[x.slug]&&BLD[x.slug].power)*(x.count||1); if(p>0) gen+=p; else use+=-p; });
+  (b.mining||[]).forEach(function(m){ var n=typeof m==='string'?1:(m.n||1); var p=num(BLD['b-extractor']&&BLD['b-extractor'].power); if(p) use+=Math.abs(p)*n; });
+  (b.production||[]).forEach(function(pr){ var r=(typeof chosenRecipe==='function')?chosenRecipe(pr.slug):null; var ws=r&&r.workstation; var p=num(BLD[ws]&&BLD[ws].power); if(p) use+=Math.abs(p)*(pr.machines||1); });
+  return {gen:gen, use:use};
+}
+function bdRenderSide(){
+  var el=document.getElementById('bdSide'); if(!el) return; var b=bdBase(); if(!b) return;
+  var d=bdDesign();
+  if(BD_SEL){ var n=(d.nodes||[]).find(function(x){return x.id===BD_SEL;}); if(n){ el.innerHTML=bdSideNode(n); return; } }
+  // base telemetry
+  var pw=bdPower(b); var over=pw.use>pw.gen&&pw.gen>0; var pct=pw.gen>0?Math.min(100,Math.round(pw.use/pw.gen*100)):0;
+  var foot=0; (b.buildings||[]).forEach(function(x){ foot+=num(BLD[x.slug]&&BLD[x.slug].footprint)*(x.count||1); });
+  var h='<div style="font-family:var(--font-display);font-weight:600;color:#fff;font-size:14px">'+esc(b.name)+'</div><div class="muted small" style="margin-bottom:4px;font-size:10.5px;color:#7d8ba1">'+esc([b.system,b.planet].filter(Boolean).join(" · ")||"base")+'</div>';
+  h+='<div class="cside-h">◍ ENERGY</div>';
+  if(pw.gen>0){ h+='<div class="cside-kpi"><span class="l">Used / Available</span><span class="v" style="font-size:14px">'+fmt(pw.use)+' / '+fmt(pw.gen)+' MA</span></div><div class="cside-bar'+(over?' over':'')+'"><span style="width:'+pct+'%"></span></div>'; if(over){ h+='<div class="cside-warn">⚡ Power short by <b>'+fmt(pw.use-pw.gen)+' MA</b> — add power buildings.</div>'; } }
+  else { h+='<div class="cside-kpi"><span class="l">Consumption</span><span class="v" style="font-size:15px">'+fmt(pw.use)+' MA</span></div><div class="muted small" style="font-size:10.5px;color:#7d8ba1">No power buildings yet — add generators.</div>'; }
+  h+='<div class="cside-h">◍ FOOTPRINT</div><div class="cside-kpi"><span class="l">Total</span><span class="v" style="font-size:15px">'+fmt(foot)+' FP</span></div>';
+  if(b.production&&b.production.length){ h+='<div class="cside-h">◍ PRODUCES</div>'; b.production.forEach(function(pr){ h+='<div class="cside-row">'+ico(pr.slug,'sm')+'<span style="flex:1;min-width:0">'+esc(itemName(pr.slug))+'</span><span style="font-family:var(--font-mono);color:#9fb0c4;font-size:10.5px">'+fmt(pr.rate||0)+'/h</span></div>'; }); }
+  if(b.mining&&b.mining.length){ h+='<div class="cside-h">◍ MINES</div>'; b.mining.forEach(function(m){ var mid=typeof m==='string'?m:m.id; var n=typeof m==='string'?1:(m.n||1); var res=bdMineRes(mid); var y=bdMineYield(mid,n).sort(function(a,c){return c.rate-a.rate;})[0]; h+='<div class="cside-row">'+ico(mid,'sm')+'<span style="flex:1;min-width:0">'+esc(res?res.name:mid)+'</span><span style="font-family:var(--font-mono);color:#9fb0c4;font-size:10.5px">'+(y?fmt(y.rate)+'/h':(n+'×'))+'</span></div>'; }); }
+  // storage across warehouses
+  var wh=(d.nodes||[]).filter(function(x){return x.kind==='warehouse';}); var store={};
+  wh.forEach(function(w){ (w.items||[]).forEach(function(it){ store[it.slug]=(store[it.slug]||0)+(it.qty||0); }); });
+  var sk=Object.keys(store); if(sk.length){ h+='<div class="cside-h">◍ STORAGE</div>'; sk.sort(function(a,c){return store[c]-store[a];}).forEach(function(sl){ h+='<div class="cside-row">'+ico(sl,'sm')+'<span style="flex:1;min-width:0">'+esc(itemName(sl))+'</span><span style="font-family:var(--font-mono);color:#ffd049;font-size:10.5px">'+fmt(store[sl])+'</span></div>'; }); }
+  el.innerHTML=h;
+}
+function bdSideNode(n){
+  var head=function(t,tag){ return '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-family:var(--font-mono);font-size:9px;letter-spacing:.16em;color:#66e0fa">◍ '+tag+'</span><span onclick="bdDeselect()" style="cursor:pointer;color:#9fb0c4;font-size:14px">✕</span></div><div style="font-family:var(--font-display);font-weight:600;color:#fff;font-size:14px">'+t+'</div>'; };
+  var foot='<div style="display:flex;gap:7px;margin-top:14px"><button class="bdbtn" style="height:30px" onclick="bdCloneNode(&quot;'+n.id+'&quot;)">⧉ Duplicate</button><button class="bdbtn" style="height:30px;border-color:rgba(255,122,122,.4);color:#ff9a88" onclick="bdDeleteNode(&quot;'+n.id+'&quot;)">🗑 Delete</button></div>';
+  if(n.kind==='warehouse'){
+    var rows=(n.items||[]).map(function(it,i){ return '<div class="whrow">'+ico(it.slug,'sm')+'<span style="flex:1;min-width:0">'+esc(itemName(it.slug))+'</span><span style="font-family:var(--font-mono);color:#ffd049">'+fmt(it.qty||0)+'</span><span class="bact" style="cursor:pointer;color:#ff9a88" onclick="bdWhRemove(&quot;'+n.id+'&quot;,'+i+')">✕</span></div>'; }).join('')||'<div class="muted small" style="padding:4px 0;color:#7d8ba1">Empty — add items below.</div>';
+    return head(esc(n.name||'Warehouse'),'WAREHOUSE')
+      +'<div style="margin-top:10px">'+rows+'</div>'
+      +'<div class="birow"><input class="bi" id="bdWhItem" list="itemDatalist" placeholder="item…" style="flex:1;margin:0"><input class="bi" id="bdWhQty" type="number" min="1" value="1" style="width:64px;margin:0"><button class="bdbtn" style="height:34px" onclick="bdWhAdd(&quot;'+n.id+'&quot;)">Add</button></div>'
+      +'<div class="birow"><input class="bi" id="bdWhName" placeholder="rename warehouse…" value="'+esc(n.name||'')+'" style="flex:1;margin:0" onchange="bdWhRename(&quot;'+n.id+'&quot;,this.value)"></div>'
+      +foot;
+  }
+  if(n.kind==='building'){ var bd=BLD[n.slug]||{}; var p=num(bd.power)*(n.count||1);
+    return head(esc(bd.name||n.slug),'BUILDING')
+      +'<div class="cside-kpi"><span class="l">Count</span><span class="v">'+(n.count||1)+'</span></div>'
+      +(num(bd.power)?'<div class="cside-kpi"><span class="l">Power</span><span class="v" style="font-size:14px;color:'+(p>0?'#5fe9ce':'#ff9a88')+'">'+(p>0?'+':'')+fmt(p)+' MA</span></div>':'')
+      +(num(bd.footprint)?'<div class="cside-kpi"><span class="l">Footprint</span><span class="v" style="font-size:14px">'+fmt(num(bd.footprint)*(n.count||1))+' FP</span></div>':'')
+      +'<div class="birow"><span class="muted small">Count</span><input class="bi" type="number" min="1" value="'+(n.count||1)+'" style="width:70px;margin:0" onchange="bdSetCount(&quot;'+n.id+'&quot;,this.value)"></div>'
+      +foot;
+  }
+  if(n.kind==='mining'){ var res=bdMineRes(n.slug); var y=bdMineYield(n.slug,n.n).sort(function(a,c){return c.rate-a.rate;});
+    return head('⛏ '+esc(res?res.name:n.slug),'MINING NODE')
+      +'<div class="cside-kpi"><span class="l">Extractors</span><span class="v">'+(n.n||1)+'</span></div>'
+      +'<div class="cside-h">◍ YIELD</div>'+ (y.length?y.map(function(dd){return '<div class="cside-row">'+ico(dd.slug,'sm')+'<span style="flex:1;min-width:0">'+esc(itemName(dd.slug))+'</span><span style="font-family:var(--font-mono);color:#5fe9ce;font-size:10.5px">'+fmt(dd.rate)+'/h</span></div>';}).join(''):'<div class="muted small">—</div>')
+      +'<div class="birow"><span class="muted small">Extractors</span><input class="bi" type="number" min="1" value="'+(n.n||1)+'" style="width:70px;margin:0" onchange="bdSetMining(&quot;'+n.id+'&quot;,this.value)"></div>'
+      +foot;
+  }
+  // production
+  return head(esc(itemName(n.slug)),'PRODUCTION')
+    +'<div class="cside-kpi"><span class="l">Output</span><span class="v" style="font-size:14px;color:#a78bfa">'+fmt(n.rate||0)+'/h</span></div>'
+    +'<div class="cside-kpi"><span class="l">Machines</span><span class="v">'+(n.machines||1)+'</span></div>'
+    +foot;
+}
+function bdAddWarehouse(){ var d=bdDesign(); if(!d) return; var id='n'+Date.now(); d.nodes.push({id:id, kind:'warehouse', name:'Warehouse', items:[], x:Math.round(-BD_PANX/BD_SCALE+120), y:Math.round(-BD_PANY/BD_SCALE+120)}); bdSave(); bdRender(); bdSelect(id); }
+function bdAddBuilding(slug){ var d=bdDesign(); if(!d) return; var id='n'+Date.now(); d.nodes.push({id:id, kind:'building', slug:slug, count:1, x:Math.round(-BD_PANX/BD_SCALE+150), y:Math.round(-BD_PANY/BD_SCALE+150)}); bdSave(); bdRender(); bdSelect(id); }
+function bdCloneNode(id){ var d=bdDesign(); var n=(d.nodes||[]).find(function(x){return x.id===id;}); if(!n) return; var c=JSON.parse(JSON.stringify(n)); c.id='n'+Date.now(); c.x=(n.x||0)+40; c.y=(n.y||0)+40; d.nodes.push(c); bdSave(); bdRender(); bdSelect(c.id); }
+function bdDeleteNode(id){ var d=bdDesign(); d.nodes=(d.nodes||[]).filter(function(x){return x.id!==id;}); d.links=(d.links||[]).filter(function(l){return l.a!==id&&l.b!==id;}); if(BD_SEL===id) BD_SEL=null; bdSave(); bdRender(); }
+function bdSetCount(id,v){ var d=bdDesign(); var n=(d.nodes||[]).find(function(x){return x.id===id;}); if(n){ n.count=Math.max(1,parseInt(v)||1); bdSave(); bdRender(); bdSelect(id); } }
+function bdSetMining(id,v){ var d=bdDesign(); var n=(d.nodes||[]).find(function(x){return x.id===id;}); if(n){ n.n=Math.max(1,parseInt(v)||1); bdSave(); bdRender(); bdSelect(id); } }
+function bdWhAdd(id){ var d=bdDesign(); var n=(d.nodes||[]).find(function(x){return x.id===id;}); if(!n) return; var name=(document.getElementById('bdWhItem').value||'').trim(); var qty=Math.max(1,parseInt(document.getElementById('bdWhQty').value)||1); var it=GAME.items.find(function(i){return i.name.toLowerCase()===name.toLowerCase();})||GAME.resources.find(function(r){return r.name.toLowerCase()===name.toLowerCase();}); if(!it){ alert('Item not found: '+name); return; } n.items=n.items||[]; var ex=n.items.find(function(x){return x.slug===it.slug;}); if(ex) ex.qty+=qty; else n.items.push({slug:it.slug, qty:qty}); bdSave(); bdRender(); bdSelect(id); }
+function bdWhRemove(id,i){ var d=bdDesign(); var n=(d.nodes||[]).find(function(x){return x.id===id;}); if(n&&n.items){ n.items.splice(i,1); bdSave(); bdRender(); bdSelect(id); } }
+function bdWhRename(id,v){ var d=bdDesign(); var n=(d.nodes||[]).find(function(x){return x.id===id;}); if(n){ n.name=v||'Warehouse'; bdSave(); bdRender(); bdSelect(id); } }
+function bdToggleLink(){ BD_LINKING=!BD_LINKING; BD_LINKSRC=null; var btn=document.getElementById('bdLinkBtn'); if(btn) btn.classList.toggle('act', BD_LINKING); document.querySelectorAll('.bdnode.linksrc').forEach(function(el){el.classList.remove('linksrc');}); }
+function bdLinkClick(id){ if(!BD_LINKSRC){ BD_LINKSRC=id; var el=document.querySelector('.bdnode[data-bd="'+id+'"]'); if(el) el.classList.add('linksrc'); return; } if(BD_LINKSRC===id){ bdToggleLink(); return; } var d=bdDesign(); d.links=d.links||[]; if(!d.links.some(function(l){return (l.a===BD_LINKSRC&&l.b===id)||(l.a===id&&l.b===BD_LINKSRC);})) d.links.push({a:BD_LINKSRC, b:id}); BD_LINKSRC=null; bdToggleLink(); bdSave(); bdRender(); }
+function bdFit(){ var wrap=document.getElementById('bdWrap'), cv=document.getElementById('bdCanvas'); if(!wrap||!cv) return; var W=cv.offsetWidth||600, H=cv.offsetHeight||400; var ww=wrap.clientWidth-300, wh=wrap.clientHeight-40; var k=Math.min(ww/W, wh/H, 1.2); if(!isFinite(k)||k<=0) k=1; BD_SCALE=Math.max(0.3,k); BD_PANX=30; BD_PANY=30; bdApplyTransform(); }
+function bdBind(){ if(BD_BOUND) return; BD_BOUND=true; var wrap=document.getElementById('bdWrap'); if(!wrap) return;
+  wrap.addEventListener('wheel', function(e){ e.preventDefault(); var r=wrap.getBoundingClientRect(); var mx=e.clientX-r.left, my=e.clientY-r.top; var old=BD_SCALE; var ns=Math.max(0.2,Math.min(2.2, old*(e.deltaY<0?1.12:0.89))); BD_PANX=mx-(mx-BD_PANX)*(ns/old); BD_PANY=my-(my-BD_PANY)*(ns/old); BD_SCALE=ns; bdApplyTransform(); }, {passive:false});
+  wrap.addEventListener('pointerdown', function(ev){ if(ev.target.closest('.bdnode')) return; if(ev.button!==0 && ev.button!==2) return; if(BD_LINKING){ return; } ev.preventDefault(); wrap.classList.add('panning'); var lx=ev.clientX, ly=ev.clientY, moved=false; var mv=function(e){ if(Math.abs(e.clientX-lx)>3||Math.abs(e.clientY-ly)>3)moved=true; BD_PANX+=(e.clientX-lx); BD_PANY+=(e.clientY-ly); lx=e.clientX; ly=e.clientY; bdApplyTransform(); }; var up=function(){ wrap.classList.remove('panning'); window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); if(!moved) bdDeselect(); }; window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up); });
+  wrap.addEventListener('contextmenu', function(e){e.preventDefault();});
+}
+</script>
+
 <button id="crBug" title="Report a bug or suggest an idea" onclick="crBugOpen()">🐞</button>
 <div id="crBugPanel">
   <div class="crb-hd"><span style="color:#fff">💬 Report a bug / idea</span><span onclick="crBugClose()">✕</span></div>
