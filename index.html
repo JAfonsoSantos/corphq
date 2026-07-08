@@ -381,6 +381,19 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
 </div><div id="chainSummary" style="display:none"></div><div id="chainInspector" style="display:none"></div><div id="chainCanvas"><svg id="chainSvg"></svg></div><div id="chainEmptyHint" style="position:absolute;top:50%;left:55%;transform:translate(-50%,-50%);color:var(--dim2);font-size:14px;pointer-events:none;text-align:center">Compute a chain above, or open <b>＋ Buildings</b> and click to drop machines here — free-form mode.</div><div id="chainSelRect"></div><div id="bpanel"><div class="bphd"><button onclick="closeBPanel()" title="close" style="position:absolute;top:6px;right:4px;background:none;border:0;color:var(--dim2);font-size:15px;cursor:pointer;line-height:1;padding:2px 4px;z-index:2">✕</button><div style="padding-right:22px"><b>Buildings</b> <span class="muted small">click or drag</span></div><input id="bpSearch" placeholder="search…" oninput="renderBPanel()" style="width:100%;margin-top:6px"></div><div id="bpList"></div></div></div>
 </section>
 
+<section class="tab" id="tab-logistics">
+  <div class="card"><div class="row" style="align-items:center;flex-wrap:wrap">
+    <b style="font-family:var(--font-display);font-size:15px;color:#fff">🚀 Corp Logistics</b>
+    <span class="muted small">plan shuttle routes between your bases</span>
+    <span style="flex:1"></span>
+    <button class="btn sec" id="lgRouteBtn" onclick="lgToggleRoute()">🔗 New route</button>
+    <button class="btn sec" onclick="lgFit()">⤢ Fit</button>
+  </div></div>
+  <div id="lgWrap"><div id="lgCanvas"><svg id="lgSvg"></svg></div>
+    <div id="lgHint">Click a base for details · <b>New route</b> then click two bases to connect a shuttle lane · green = in shuttle range, red = needs FTL/cargo · drag bases to arrange.</div>
+    <div id="lgSide"></div>
+  </div>
+</section>
 <section class="tab" id="tab-basedesigner">
   <div class="card"><div class="row" style="align-items:center;flex-wrap:wrap">
     <button class="btn sec" onclick="closeBaseDesigner()"><i class="ph-fill ph-arrow-left"></i> Bases</button>
@@ -661,12 +674,12 @@ function basePower(b){
 }
 
 /* ============ UI ============ */
-const TABS = [['dashboard','Dashboard'],['bases','Bases'],['planner','Crafting Planner'],['chain','Chain Designer'],['profit','💰 Profit'],['market','Market'],['database','Database'],['calc','Calculators'],['settings','Settings']];
+const TABS = [['dashboard','Dashboard'],['bases','Bases'],['planner','Crafting Planner'],['chain','Chain Designer'],['logistics','🚀 Logistics'],['profit','💰 Profit'],['market','Market'],['database','Database'],['calc','Calculators'],['settings','Settings']];
 let activeTab = 'dashboard';
 let editingBaseId = null, draftDeposits = [], draftBuildings = [], draftMining = [], draftProduction = [];
 
 const App = {
-  show(tab){ activeTab=tab; try{ if(window.logEvent && window.__lastView!==tab){ window.__lastView=tab; logEvent('view',tab); } }catch(e){} document.querySelectorAll('section.tab').forEach(s=>s.classList.toggle('active', s.id==='tab-'+tab)); document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab)); if(tab==='calc'&&window.initCalc)initCalc(); if(tab==='chain'){ setTimeout(()=>{ const p=document.getElementById('bpanel'); if(p && p.style.display!=='block'){ p.style.display='block'; if(typeof renderBPanel==='function') renderBPanel(); if(typeof bindPalette==='function') bindPalette(); const btn=document.querySelector('button[onclick="toggleBPanel()"]'); if(btn) btn.classList.add('act'); } },80); } },
+  show(tab){ activeTab=tab; try{ if(window.logEvent && window.__lastView!==tab){ window.__lastView=tab; logEvent('view',tab); } }catch(e){} document.querySelectorAll('section.tab').forEach(s=>s.classList.toggle('active', s.id==='tab-'+tab)); document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab)); if(tab==='calc'&&window.initCalc)initCalc(); if(tab==='logistics'){ setTimeout(function(){ if(window.lgOpen) lgOpen(); },60); } if(tab==='chain'){ setTimeout(()=>{ const p=document.getElementById('bpanel'); if(p && p.style.display!=='block'){ p.style.display='block'; if(typeof renderBPanel==='function') renderBPanel(); if(typeof bindPalette==='function') bindPalette(); const btn=document.querySelector('button[onclick="toggleBPanel()"]'); if(btn) btn.classList.add('act'); } },80); } },
 
   /* bases */
   editBase(id){
@@ -2367,6 +2380,14 @@ authInit();
 #bdSide{position:absolute;top:70px;right:12px;width:266px;max-height:calc(100% - 84px);overflow-y:auto;z-index:7;background:linear-gradient(180deg,rgba(9,20,38,.96),rgba(5,11,22,.97));border:1px solid rgba(96,165,215,.2);border-radius:12px;box-shadow:0 12px 40px rgba(2,8,20,.6);backdrop-filter:blur(6px);padding:13px 14px;font-size:12.5px}
 #bdHint{position:absolute;left:12px;bottom:12px;z-index:5;font-family:"Roboto Mono",monospace;font-size:10.5px;color:#7d8ba1;background:rgba(6,14,26,.7);border:1px solid rgba(96,165,215,.14);border-radius:9px;padding:7px 11px;max-width:340px}
 .cnode.linksrc{outline:2px dashed #66e0fa;outline-offset:2px}
+#lgWrap{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:12px;background:radial-gradient(600px 340px at 40% 30%, rgba(6,48,92,.22), #070b12);height:calc(100vh - 210px);min-height:460px;margin-top:12px;cursor:grab}
+#lgWrap.panning{cursor:grabbing}
+#lgCanvas{position:absolute;top:0;left:0;transform-origin:0 0}
+#lgSvg{position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+#lgSide{position:absolute;top:14px;right:12px;width:266px;max-height:calc(100% - 28px);overflow-y:auto;z-index:7;background:linear-gradient(180deg,rgba(9,20,38,.96),rgba(5,11,22,.97));border:1px solid rgba(96,165,215,.2);border-radius:12px;box-shadow:0 12px 40px rgba(2,8,20,.6);backdrop-filter:blur(6px);padding:13px 14px;font-size:12.5px}
+#lgSide .bi{width:100%;margin:5px 0;padding:7px 10px;border-radius:8px;background:rgba(6,14,26,.7);border:1px solid rgba(96,165,215,.2);color:#eaf3fb;font-family:"Roboto Mono",monospace;font-size:12px;outline:none}
+#lgSide .birow{display:flex;gap:6px;align-items:center;margin-top:6px}
+#lgHint{position:absolute;left:12px;bottom:12px;z-index:5;font-family:"Roboto Mono",monospace;font-size:10.5px;color:#7d8ba1;background:rgba(6,14,26,.7);border:1px solid rgba(96,165,215,.14);border-radius:9px;padding:7px 11px;max-width:360px}
 #bdSide .bi{width:100%;margin:5px 0;padding:7px 10px;border-radius:8px;background:rgba(6,14,26,.7);border:1px solid rgba(96,165,215,.2);color:#eaf3fb;font-family:"Roboto Mono",monospace;font-size:12px;outline:none}
 #bdSide .birow{display:flex;gap:6px;align-items:center;margin-top:6px}
 #bdSide .whrow{display:flex;align-items:center;gap:7px;padding:5px 0;font-size:12px;color:#c7d4e2;border-bottom:1px solid rgba(96,165,215,.08)}
@@ -2531,6 +2552,82 @@ function bdBind(){ if(BD_BOUND) return; BD_BOUND=true; var wrap=document.getElem
   wrap.addEventListener('wheel', function(e){ e.preventDefault(); var r=wrap.getBoundingClientRect(); var mx=e.clientX-r.left, my=e.clientY-r.top; var old=BD_SCALE; var ns=Math.max(0.2,Math.min(2.2, old*(e.deltaY<0?1.12:0.89))); BD_PANX=mx-(mx-BD_PANX)*(ns/old); BD_PANY=my-(my-BD_PANY)*(ns/old); BD_SCALE=ns; bdApplyTransform(); }, {passive:false});
   wrap.addEventListener('pointerdown', function(ev){ if(ev.target.closest('.bdnode')) return; if(ev.button!==0 && ev.button!==2) return; if(BD_LINKING){ return; } ev.preventDefault(); wrap.classList.add('panning'); var lx=ev.clientX, ly=ev.clientY, moved=false; var mv=function(e){ if(Math.abs(e.clientX-lx)>3||Math.abs(e.clientY-ly)>3)moved=true; BD_PANX+=(e.clientX-lx); BD_PANY+=(e.clientY-ly); lx=e.clientX; ly=e.clientY; bdApplyTransform(); }; var up=function(){ wrap.classList.remove('panning'); window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); if(!moved) bdDeselect(); }; window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up); });
   wrap.addEventListener('contextmenu', function(e){e.preventDefault();});
+}
+</script>
+
+<script>
+/* ============ CORP LOGISTICS (Phase 3) — shuttle routes between bases ============ */
+let LG_SEL=null, LG_LANE=-1, LG_SCALE=1, LG_PANX=30, LG_PANY=30, LG_ROUTING=false, LG_RSRC=null, LG_BOUND=false;
+function lgData(){ STATE.layouts=STATE.layouts||{}; var d=STATE.layouts['logistics']; if(!d){ d={pos:{},lanes:[]}; STATE.layouts['logistics']=d; } if(!d.pos)d.pos={}; if(!d.lanes)d.lanes=[]; return d; }
+function lgSave(){ if(window.CORP && typeof pushPlan==='function') pushPlan(); }
+function lgBases(){ return (STATE.bases||[]); }
+function lgBase(id){ return lgBases().find(function(b){return b.id===id;}); }
+function lgProduces(b){ return (b&&b.production||[]).slice().sort(function(x,y){return (y.rate||0)-(x.rate||0);}); }
+function lgAutoPos(){ var d=lgData(); var i=0; lgBases().forEach(function(b){ if(!d.pos[b.id]){ d.pos[b.id]={x:40+(i%3)*300, y:40+Math.floor(i/3)*160}; } i++; }); }
+function lgRange(aId,bId){ var a=lgBase(aId), b=lgBase(bId); if(!a||!b) return {ok:false,d:null}; var dist=(typeof baseDistance==='function')?baseDistance(GALAXY_CACHE,a.name,b.name):null; return {ok:(dist!=null&&dist<=SHUTTLE_RANGE), d:dist, same:(a.system&&b.system&&a.system===b.system)}; }
+function lgOpen(){ lgAutoPos(); lgSave(); var go=function(){ lgBind(); lgRender(); setTimeout(lgFit,60); }; if(typeof ensureGalaxy==='function'){ ensureGalaxy().then(go).catch(go); } else go(); }
+function lgApply(){ var cv=document.getElementById('lgCanvas'); if(cv) cv.style.transform='translate('+LG_PANX+'px,'+LG_PANY+'px) scale('+LG_SCALE+')'; }
+function lgCenter(id){ var p=lgData().pos[id]||{x:0,y:0}; return {x:p.x+108,y:p.y+42}; }
+function lgRender(){
+  var cv=document.getElementById('lgCanvas'), d=lgData(); if(!cv) return;
+  cv.querySelectorAll('.cnode').forEach(function(el){el.remove();});
+  var cols=(typeof baseColorMap==='function')?baseColorMap():{}; var maxX=600,maxY=400;
+  var bs=lgBases();
+  if(!bs.length){ cv.querySelectorAll('.cnode').forEach(function(el){el.remove();}); lgSide(); document.getElementById('lgSvg').innerHTML=''; return; }
+  bs.forEach(function(b){ var p=d.pos[b.id]||{x:40,y:40}; var col=cols[b.name]||'#5eb2ff'; var prod=lgProduces(b);
+    var el=document.createElement('div'); el.className='cnode'+(LG_SEL===b.id?' sel':''); el.setAttribute('data-lg',b.id); el.style.left=p.x+'px'; el.style.top=p.y+'px'; el.style.borderLeft='4px solid '+col;
+    el.innerHTML='<div class="nm">🏠 '+esc(b.name)+'</div><div class="meta">'+esc([b.system,b.planet].filter(Boolean).join(' · ')||'—')+'</div>'+(prod.length?'<div class="meta" style="color:#a78bfa;margin-top:4px">▸ '+prod.slice(0,3).map(function(pr){return esc(itemName(pr.slug))+' '+fmt(pr.rate||0)+'/h';}).join('<br>▸ ')+'</div>':'<div class="meta" style="color:#7d8ba1;margin-top:4px">no production yet</div>');
+    cv.appendChild(el); lgDrag(el,b.id); maxX=Math.max(maxX,p.x+300); maxY=Math.max(maxY,p.y+220);
+  });
+  cv.style.width=maxX+'px'; cv.style.height=maxY+'px';
+  lgApply(); lgRedraw(); lgSide();
+}
+function lgRedraw(){ var sv=document.getElementById('lgSvg'), d=lgData(); if(!sv) return; var svg='';
+  (d.lanes||[]).forEach(function(l){ var a=lgCenter(l.from), b=lgCenter(l.to); var rc=lgRange(l.from,l.to); var col=rc.ok?'#5fe08a':'#ff7a7a'; var mx=(a.x+b.x)/2;
+    svg+='<path d="M'+a.x+','+a.y+' C'+mx+','+a.y+' '+mx+','+b.y+' '+b.x+','+b.y+'" fill="none" stroke="'+col+'" stroke-width="2.2" stroke-dasharray="7 5"/>';
+    var txt=(rc.ok?'🚀 ':'⚠ ')+(l.slug?esc(itemName(l.slug)).slice(0,12)+' '+fmt(l.rate||0)+'/h':'set item'); var lw=Math.max(64,txt.length*6.2);
+    svg+='<rect x="'+(mx-lw/2)+'" y="'+((a.y+b.y)/2-9)+'" width="'+lw+'" height="16" rx="8" fill="'+(rc.ok?'#12351f':'#3a1414')+'" stroke="'+col+'"/><text x="'+mx+'" y="'+((a.y+b.y)/2+3)+'" text-anchor="middle" fill="'+col+'" font-size="10">'+txt+'</text>';
+  });
+  sv.innerHTML=svg;
+}
+function lgDrag(el,id){ el.addEventListener('pointerdown',function(ev){ if(ev.button!==0) return; if(LG_ROUTING){ ev.preventDefault();ev.stopPropagation(); lgRouteClick(id); return; } ev.preventDefault();ev.stopPropagation(); el.setPointerCapture(ev.pointerId); el.style.zIndex=50; var d=lgData(); var p=d.pos[id]=d.pos[id]||{x:0,y:0}; var sx=ev.clientX,sy=ev.clientY,ox=p.x,oy=p.y,moved=false; var mv=function(e){ if(Math.abs(e.clientX-sx)>3||Math.abs(e.clientY-sy)>3)moved=true; p.x=ox+(e.clientX-sx)/LG_SCALE; p.y=oy+(e.clientY-sy)/LG_SCALE; el.style.left=p.x+'px'; el.style.top=p.y+'px'; lgRedraw(); }; var up=function(){ el.releasePointerCapture(ev.pointerId); el.style.zIndex=''; el.removeEventListener('pointermove',mv); el.removeEventListener('pointerup',up); if(!moved){ lgSelect(id); } else { p.x=Math.round(p.x); p.y=Math.round(p.y); lgSave(); } }; el.addEventListener('pointermove',mv); el.addEventListener('pointerup',up); }); }
+function lgSelect(id){ LG_SEL=id; LG_LANE=-1; document.querySelectorAll('#lgCanvas .cnode').forEach(function(el){ el.classList.toggle('sel', el.getAttribute('data-lg')===id); }); lgSide(); }
+function lgSelectLane(i){ LG_LANE=i; LG_SEL=null; document.querySelectorAll('#lgCanvas .cnode.sel').forEach(function(el){el.classList.remove('sel');}); lgSide(); }
+function lgDeselect(){ LG_SEL=null; LG_LANE=-1; document.querySelectorAll('#lgCanvas .cnode.sel').forEach(function(el){el.classList.remove('sel');}); lgSide(); }
+function lgToggleRoute(){ LG_ROUTING=!LG_ROUTING; LG_RSRC=null; var b=document.getElementById('lgRouteBtn'); if(b) b.classList.toggle('act',LG_ROUTING); document.querySelectorAll('#lgCanvas .cnode.linksrc').forEach(function(el){el.classList.remove('linksrc');}); }
+function lgRouteClick(id){ if(!LG_RSRC){ LG_RSRC=id; var el=document.querySelector('#lgCanvas .cnode[data-lg="'+id+'"]'); if(el) el.classList.add('linksrc'); return; } if(LG_RSRC===id){ lgToggleRoute(); return; } var d=lgData(); var src=lgBase(LG_RSRC); var top=lgProduces(src)[0]||{}; d.lanes.push({from:LG_RSRC,to:id,slug:top.slug||'',rate:top.rate||0}); var idx=d.lanes.length-1; LG_RSRC=null; lgToggleRoute(); lgSave(); lgRender(); lgSelectLane(idx); }
+function lgLaneSet(i){ var d=lgData(); var l=d.lanes[i]; if(!l) return; var nm=(document.getElementById('lgLaneItem').value||'').trim(); var rate=parseFloat(document.getElementById('lgLaneRate').value)||0; if(nm){ var it=GAME.items.find(function(x){return x.name.toLowerCase()===nm.toLowerCase();})||GAME.resources.find(function(r){return r.name.toLowerCase()===nm.toLowerCase();}); if(it) l.slug=it.slug; } l.rate=rate; lgSave(); lgRender(); lgSelectLane(i); }
+function lgLaneDel(i){ var d=lgData(); d.lanes.splice(i,1); lgSave(); lgRender(); lgDeselect(); }
+function lgSide(){ var el=document.getElementById('lgSide'); if(!el) return; var d=lgData();
+  if(LG_LANE>=0){ var l=d.lanes[LG_LANE]; if(l){ var a=lgBase(l.from), b=lgBase(l.to); var rc=lgRange(l.from,l.to);
+    el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-family:var(--font-mono);font-size:9px;letter-spacing:.16em;color:#66e0fa">◍ SHUTTLE LANE</span><span onclick="lgDeselect()" style="cursor:pointer;color:#9fb0c4;font-size:14px">✕</span></div>'
+      +'<div style="font-family:var(--font-mono);font-size:12px;color:#eaf3fb;margin-bottom:8px">'+esc(a?a.name:'?')+' <span style="color:#66e0fa">→</span> '+esc(b?b.name:'?')+'</div>'
+      +'<div style="margin-bottom:8px;font-size:11.5px;color:'+(rc.ok?'#5fe08a':'#ff7a7a')+'">'+(rc.ok?'✓ within shuttle range':'⚠ out of range — needs FTL / cargo ship')+(rc.same?' · same system':'')+'</div>'
+      +'<label class="muted small">Item</label><input class="bi" id="lgLaneItem" list="itemDatalist" value="'+esc(l.slug?itemName(l.slug):'')+'" placeholder="item to ship…">'
+      +'<div class="birow"><label class="muted small">Rate /h</label><input class="bi" id="lgLaneRate" type="number" min="0" value="'+(l.rate||0)+'" style="width:90px;margin:0"><button class="btn sec" style="height:34px" onclick="lgLaneSet('+LG_LANE+')">Set</button></div>'
+      +'<div style="margin-top:14px"><button class="btn sec" style="border-color:rgba(255,122,122,.4);color:#ff9a88" onclick="lgLaneDel('+LG_LANE+')">🗑 Delete lane</button></div>'; return; } }
+  if(LG_SEL){ var bb=lgBase(LG_SEL); if(bb){ var out=(d.lanes||[]).filter(function(l){return l.from===LG_SEL;}); var inl=(d.lanes||[]).filter(function(l){return l.to===LG_SEL;}); var prod=lgProduces(bb);
+    var h='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-family:var(--font-mono);font-size:9px;letter-spacing:.16em;color:#66e0fa">◍ BASE</span><span onclick="lgDeselect()" style="cursor:pointer;color:#9fb0c4;font-size:14px">✕</span></div><div style="font-family:var(--font-display);font-weight:600;color:#fff;font-size:14px">🏠 '+esc(bb.name)+'</div><div class="muted small" style="color:#7d8ba1;font-size:10.5px">'+esc([bb.system,bb.planet].filter(Boolean).join(" · ")||"—")+'</div>';
+    h+='<div class="cside-h">◍ PRODUCES</div>'+(prod.length?prod.map(function(pr){return '<div class="cside-row">'+ico(pr.slug,"sm")+'<span style="flex:1;min-width:0">'+esc(itemName(pr.slug))+'</span><span style="font-family:var(--font-mono);color:#9fb0c4;font-size:10.5px">'+fmt(pr.rate||0)+'/h</span></div>';}).join(''):'<div class="muted small">—</div>');
+    h+='<div class="cside-h">◍ OUTBOUND ('+out.length+')</div>'+(out.length?out.map(function(l){var t=lgBase(l.to);return '<div class="cside-row"><span style="flex:1;min-width:0">→ '+esc(t?t.name:"?")+'</span><span style="font-family:var(--font-mono);color:#9fb0c4;font-size:10px">'+esc(l.slug?itemName(l.slug):"—")+' '+fmt(l.rate||0)+'</span></div>';}).join(''):'<div class="muted small">none</div>');
+    h+='<div class="cside-h">◍ INBOUND ('+inl.length+')</div>'+(inl.length?inl.map(function(l){var f=lgBase(l.from);return '<div class="cside-row"><span style="flex:1;min-width:0">← '+esc(f?f.name:"?")+'</span><span style="font-family:var(--font-mono);color:#9fb0c4;font-size:10px">'+esc(l.slug?itemName(l.slug):"—")+' '+fmt(l.rate||0)+'</span></div>';}).join(''):'<div class="muted small">none</div>');
+    el.innerHTML=h; return; } }
+  // corp summary
+  var bs=lgBases(); var lanes=d.lanes||[]; var oor=lanes.filter(function(l){return !lgRange(l.from,l.to).ok;}).length;
+  var h='<div style="font-family:var(--font-display);font-weight:600;color:#fff;font-size:14px;margin-bottom:2px">Corp Logistics</div>';
+  h+='<div class="cside-h">◍ NETWORK</div>';
+  h+='<div class="cside-kpi"><span class="l">Bases</span><span class="v">'+bs.length+'</span></div>';
+  h+='<div class="cside-kpi"><span class="l">Shuttle lanes</span><span class="v">'+lanes.length+'</span></div>';
+  h+='<div class="cside-kpi"><span class="l">Out of range</span><span class="v" style="color:'+(oor?'#ff9a88':'#5fe9ce')+'">'+oor+'</span></div>';
+  if(oor) h+='<div class="cside-warn" style="margin-top:10px;background:rgba(255,122,122,.08);border:1px solid rgba(255,122,122,.3);border-radius:9px;padding:9px 11px;font-size:11px;color:#ff9a88;line-height:1.4">'+oor+' lane'+(oor>1?'s':'')+' beyond shuttle range — need FTL freighters.</div>';
+  if(!bs.length) h+='<div class="muted small" style="margin-top:10px;color:#7d8ba1">No bases yet. Register bases first, then draw shuttle routes here.</div>';
+  else h+='<div class="cside-h">◍ TIP</div><div class="muted small" style="color:#7d8ba1;line-height:1.5">Tap <b style="color:#cfeefb">New route</b>, then click two bases to create a shuttle lane. Click a lane to set item &amp; rate.</div>';
+  el.innerHTML=h;
+}
+function lgFit(){ var wrap=document.getElementById('lgWrap'), cv=document.getElementById('lgCanvas'); if(!wrap||!cv) return; var W=cv.offsetWidth||600,H=cv.offsetHeight||400; var k=Math.min((wrap.clientWidth-300)/W,(wrap.clientHeight-40)/H,1.2); if(!isFinite(k)||k<=0)k=1; LG_SCALE=Math.max(0.3,k); LG_PANX=30; LG_PANY=30; lgApply(); }
+function lgBind(){ if(LG_BOUND) return; LG_BOUND=true; var wrap=document.getElementById('lgWrap'); if(!wrap) return;
+  wrap.addEventListener('wheel', function(e){ e.preventDefault(); var r=wrap.getBoundingClientRect(); var mx=e.clientX-r.left,my=e.clientY-r.top; var old=LG_SCALE; var ns=Math.max(0.2,Math.min(2.2,old*(e.deltaY<0?1.12:0.89))); LG_PANX=mx-(mx-LG_PANX)*(ns/old); LG_PANY=my-(my-LG_PANY)*(ns/old); LG_SCALE=ns; lgApply(); }, {passive:false});
+  wrap.addEventListener('pointerdown', function(ev){ if(ev.target.closest('.cnode')) return; if(LG_ROUTING) return; ev.preventDefault(); wrap.classList.add('panning'); var lx=ev.clientX,ly=ev.clientY,moved=false; var mv=function(e){ if(Math.abs(e.clientX-lx)>3||Math.abs(e.clientY-ly)>3)moved=true; LG_PANX+=(e.clientX-lx); LG_PANY+=(e.clientY-ly); lx=e.clientX; ly=e.clientY; lgApply(); }; var up=function(){ wrap.classList.remove('panning'); window.removeEventListener('pointermove',mv); window.removeEventListener('pointerup',up); if(!moved) lgDeselect(); }; window.addEventListener('pointermove',mv); window.addEventListener('pointerup',up); });
 }
 </script>
 
