@@ -366,7 +366,6 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
       <span class="muted small">Drag empty space to pan · drag nodes to move · shift-drag to select · right-drag = pan · 💾 saves layout to your corp · green = corp already makes it.</span>
     </div>
   </div>
-  <div id="chainSummary" style="display:none"></div>
   <div id="chainWrap"><div id="chainTools">
   <div class="ctrow">
     <button class="ctbtn" onclick="resetChainLayout()" title="Auto-arrange all nodes into tidy production tiers (extractors → smelters → workshops → final)">↺ Organize</button>
@@ -379,7 +378,7 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
     <label class="cttog" title="Show the shuttle network between bases: when nodes are assigned to different bases it draws transfer links and flags routes beyond shuttle range (need cargo / FTL)."><input type="checkbox" id="chainLogi" checked onchange="CHAIN_LOGI=this.checked; if(CHAIN_CUR){ensureGalaxy().then(()=>{renderChain();chainFit();});}"> 🚀 Logistics</label>
     <label class="cttog" title="Assume a real fleet — 1 extractor per raw resource (multiple smelters only if they can't keep up). Shows true throughput per hour and how long the target quantity takes, instead of thousands of machines."><input type="checkbox" id="chainRealistic" checked onchange="if(CHAIN_CUR){renderChain();chainFit();}"> 🔧 Realistic (1 extractor)</label>
   </div>
-</div><div id="chainInspector" style="display:none"></div><div id="chainCanvas"><svg id="chainSvg"></svg></div><div id="chainEmptyHint" style="position:absolute;top:50%;left:55%;transform:translate(-50%,-50%);color:var(--dim2);font-size:14px;pointer-events:none;text-align:center">Compute a chain above, or open <b>＋ Buildings</b> and click to drop machines here — free-form mode.</div><div id="chainSelRect"></div><div id="bpanel"><div class="bphd"><button onclick="closeBPanel()" title="close" style="position:absolute;top:6px;right:4px;background:none;border:0;color:var(--dim2);font-size:15px;cursor:pointer;line-height:1;padding:2px 4px;z-index:2">✕</button><div style="padding-right:22px"><b>Buildings</b> <span class="muted small">click or drag</span></div><input id="bpSearch" placeholder="search…" oninput="renderBPanel()" style="width:100%;margin-top:6px"></div><div id="bpList"></div></div></div>
+</div><div id="chainSummary" style="display:none"></div><div id="chainInspector" style="display:none"></div><div id="chainCanvas"><svg id="chainSvg"></svg></div><div id="chainEmptyHint" style="position:absolute;top:50%;left:55%;transform:translate(-50%,-50%);color:var(--dim2);font-size:14px;pointer-events:none;text-align:center">Compute a chain above, or open <b>＋ Buildings</b> and click to drop machines here — free-form mode.</div><div id="chainSelRect"></div><div id="bpanel"><div class="bphd"><button onclick="closeBPanel()" title="close" style="position:absolute;top:6px;right:4px;background:none;border:0;color:var(--dim2);font-size:15px;cursor:pointer;line-height:1;padding:2px 4px;z-index:2">✕</button><div style="padding-right:22px"><b>Buildings</b> <span class="muted small">click or drag</span></div><input id="bpSearch" placeholder="search…" oninput="renderBPanel()" style="width:100%;margin-top:6px"></div><div id="bpList"></div></div></div>
 </section>
 
 <section class="tab" id="tab-calc">
