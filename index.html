@@ -1652,6 +1652,7 @@ function closeInspector(){ var el=document.getElementById('chainInspector'); if(
 function openInspector(key){
   var el=document.getElementById('chainInspector'); if(!el||!key) return;
   var _cs=document.getElementById('chainSummary'); if(_cs) _cs.style.display='none';
+  if(typeof _positionChainRail==='function') _positionChainRail(el);
   document.querySelectorAll('.cnode.inspected').forEach(function(x){x.classList.remove('inspected');});
   window.__inspectKey=key; var body='', selEl=null;
   if(key.indexOf('infra:')===0){
@@ -1871,6 +1872,13 @@ function realisticRescale(nodes, edges, targetRate){
   for(var k in edges){ if(edges[k].rate) edges[k].rate*=f; }
   return {applied:true, maxExt:maxExt, f:f, rStar:targetRate*f};
 }
+function _positionChainRail(el){
+  if(!el) return;
+  var ct=document.getElementById('chainTools');
+  var top = ct ? (ct.offsetTop + ct.offsetHeight + 14) : 158;
+  el.style.top = top+'px';
+  el.style.maxHeight = 'calc(100% - '+(top+16)+'px)';
+}
 function renderChainSide(){
   var el=document.getElementById('chainSummary'); if(!el) return;
   if(window.__inspectKey){ el.style.display='none'; return; }
@@ -1901,7 +1909,7 @@ function renderChainSide(){
   h+='<div class="cside-kpi"><span class="l">Footprint</span><span class="v" style="font-size:14px">'+fmt(totFoot)+' FP</span></div>';
   var wk=Object.keys(byWs); if(wk.length){ h+='<div class="cside-h">◍ WORKSTATIONS</div>'; wk.sort(function(a,b){return byWs[b]-byWs[a];}).forEach(function(w){ h+='<div class="cside-row">'+ico(w,'sm')+'<span style="flex:1;min-width:0">'+esc(wsName(w))+'</span><span class="rt" style="background:rgba(96,165,215,.1);color:#cfeefb">'+byWs[w]+'</span></div>'; }); }
   if(raws.length){ h+='<div class="cside-h">◍ RAW MATERIALS</div>'; raws.forEach(function(r){ var tag=r.corpRate?'<span class="rt corp">CORP</span>':((mktOn&&mktPrice(r.slug)&&mktPrice(r.slug).av)?'<span class="rt buy">BUY</span>':''); h+='<div class="cside-row">'+ico(r.slug,'sm')+'<span style="flex:1;min-width:0">'+esc(itemName(r.slug))+'</span><span style="font-family:var(--font-mono,monospace);color:#9fb0c4;font-size:10.5px">'+fmt(r.rate)+'/h</span>'+tag+'</div>'; }); }
-  el.innerHTML=h; el.style.display='block';
+  el.innerHTML=h; _positionChainRail(el); el.style.display='block';
 }
 function renderChain(){
   if(!CHAIN_CUR){ renderManualOnly(); return; }
