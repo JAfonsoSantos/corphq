@@ -1875,7 +1875,7 @@ function realisticRescale(nodes, edges, targetRate){
 function _positionChainRail(el){
   if(!el) return;
   var ct=document.getElementById('chainTools');
-  var top = ct ? (ct.offsetTop + ct.offsetHeight + 14) : 158;
+  var top = (ct && ct.offsetHeight>0) ? (ct.offsetTop + ct.offsetHeight + 14) : 200;
   el.style.top = top+'px';
   el.style.maxHeight = 'calc(100% - '+(top+16)+'px)';
 }
