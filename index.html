@@ -2425,11 +2425,11 @@ function openBaseDesigner(id){
   if(!d || !d.nodes || !d.nodes.length){ d=bdAuto(b); STATE.layouts[bdKey()]=d; }
   bdSave();
   BD_SCALE=1; BD_PANX=30; BD_PANY=30;
-  if(window.App && App.show) App.show('basedesigner');
+  if(typeof App!=='undefined' && App.show) App.show('basedesigner');
   bdBind(); bdRender(); setTimeout(bdFit,80);
   try{ if(window.logEvent) logEvent('basedesigner', b.name||''); }catch(e){}
 }
-function closeBaseDesigner(){ if(window.App && App.show) App.show('bases'); }
+function closeBaseDesigner(){ if(typeof App!=='undefined' && App.show) App.show('bases'); }
 
 function bdAuto(b){
   var nodes=[], id=0; var COLW=250, gap=118;
