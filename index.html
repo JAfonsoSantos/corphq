@@ -24,7 +24,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="canonical" href="https://corphq.space/">
-<link rel="manifest" href="/manifest.webmanifest">
+<link rel="manifest" href="/manifest.webmanifest"><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"CorpHQ","url":"https://corphq.space/","applicationCategory":"GameApplication","operatingSystem":"Web","browserRequirements":"Requires JavaScript","description":"Corp management, production chain designer, live market prices and a full 47-quadrant galaxy map for the game SpaceCraft (Shiro Games), live-synced across your whole corp. Free.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Organization","name":"CorpHQ"}}</script><style>a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible,[data-tab]:focus-visible,[data-cslug]:focus-visible{outline:2px solid #66e0fa;outline-offset:2px}</style>
 <style>
 :root{
   --bg:#0b0e14; --panel:#141925; --panel2:#1b2233; --border:#2a3348;
@@ -523,13 +523,13 @@ const esc = s => String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>
 const num = v => { if(v==null) return null; const n = parseFloat(String(v).replace(/,/g,'')); return isNaN(n)?null:n; };
 const fmt = n => n==null?'—':(Math.round(n*100)/100).toLocaleString();
 const CDN='https://cdn.pixel6.tools/spacecraft/images/icons/';
-function ico(slug,sz){ const f=window.ICONS&&window.ICONS[slug]; return f? '<img class="ico'+(sz?' '+sz:'')+'" referrerpolicy="no-referrer" src="'+CDN+f+'.webp?v=2" onerror="this.style.display=\'none\'">' : ''; }
+function ico(slug,sz){ const f=window.ICONS&&window.ICONS[slug]; return f? '<img alt="" class="ico'+(sz?' '+sz:'')+'" referrerpolicy="no-referrer" src="'+CDN+f+'.webp?v=2" onerror="this.style.display=\'none\'">' : ''; }
 const CAT_COLORS={'resources':'#7dd3fc','components':'#a78bfa','ship-parts':'#5eb2ff','consumables':'#ffb454','buildings':'#5fe08a','blueprints':'#f0a5ff'};
 function catColor(c){ return CAT_COLORS[c]||'#8ea0bf'; }
-function tile(slug,sz){ const f=window.ICONS&&window.ICONS[slug]; sz=sz||'s'; const inner=f?'<img referrerpolicy="no-referrer" src="'+CDN+f+'.webp?v=2" onerror="this.style.visibility=\'hidden\'">':''; return '<span class="tile '+sz+'">'+inner+'</span>'; }
-function tileRes(id,sz){ const f=window.ICONS&&window.ICONS[id]; sz=sz||'s'; const inner=f?'<img referrerpolicy="no-referrer" src="'+CDN+f+'.webp?v=2">':(id?'<img referrerpolicy="no-referrer" src="'+CDN+'resources/'+id+'.webp?v=2" onerror="this.style.visibility=\'hidden\'">':''); return '<span class="tile '+sz+'">'+inner+'</span>'; }
+function tile(slug,sz){ const f=window.ICONS&&window.ICONS[slug]; sz=sz||'s'; const inner=f?'<img alt="" referrerpolicy="no-referrer" src="'+CDN+f+'.webp?v=2" onerror="this.style.visibility=\'hidden\'">':''; return '<span class="tile '+sz+'">'+inner+'</span>'; }
+function tileRes(id,sz){ const f=window.ICONS&&window.ICONS[id]; sz=sz||'s'; const inner=f?'<img alt="" referrerpolicy="no-referrer" src="'+CDN+f+'.webp?v=2">':(id?'<img alt="" referrerpolicy="no-referrer" src="'+CDN+'resources/'+id+'.webp?v=2" onerror="this.style.visibility=\'hidden\'">':''); return '<span class="tile '+sz+'">'+inner+'</span>'; }
 function itemCell(slug,sub){ const it=ITEMS[slug]; const cat=it?it.category:''; return '<div class="itemcell"><span class="catdot" style="background:'+catColor(cat)+'"></span>'+tile(slug,'s')+'<div><div class="nm">'+esc(itemName(slug))+'</div>'+(sub?'<div class="sub">'+esc(sub)+'</div>':'')+'</div></div>'; }
-function icoRes(id,sz){ return id? '<img class="ico'+(sz?' '+sz:'')+'" referrerpolicy="no-referrer" src="'+CDN+'resources/'+id+'.webp?v=2" onerror="this.style.display=\'none\'">' : ''; }
+function icoRes(id,sz){ return id? '<img alt="" class="ico'+(sz?' '+sz:'')+'" referrerpolicy="no-referrer" src="'+CDN+'resources/'+id+'.webp?v=2" onerror="this.style.display=\'none\'">' : ''; }
 
 /* index game data */
 const ITEMS = {}; GAME.items.forEach(i=>ITEMS[i.slug]=i);
@@ -2321,7 +2321,7 @@ function openAuth(){ if(USER&&!window.CORP){ var g=document.getElementById('auth
 function closeAuth(){ document.getElementById('authGate').style.display='none'; }
 function authMsg(t,bad){ const e=document.getElementById('authMsg'); e.textContent=t||''; e.style.color=bad?'var(--bad)':'var(--dim)'; }
 function authShow(step){ for(const s of ['authStep1','authStep2','authOnboard']) document.getElementById(s).style.display = s===step?'block':'none'; }
-async function authSend(){ const email=document.getElementById('authEmail').value.trim(); if(!email)return; authMsg('Sending code…'); const {error}=await SBC.auth.signInWithOtp({email}); if(error){authMsg(error.message,true);return;} authShow('authStep2'); authMsg('Code sent to '+email+' — check inbox and spam.'); }
+async function authSend(){ const email=document.getElementById('authEmail').value.trim(); if(!email)return; if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){authMsg('Please enter a valid email address.');return;} authMsg('Sending code…'); const {error}=await SBC.auth.signInWithOtp({email}); if(error){authMsg(error.message,true);return;} authShow('authStep2'); authMsg('Code sent to '+email+' — check inbox and spam.'); }
 function authBack(){ authShow('authStep1'); authMsg(''); }
 async function authVerify(){ const email=document.getElementById('authEmail').value.trim(); const code=document.getElementById('authCode').value.trim(); authMsg('Verifying…'); const {data,error}=await SBC.auth.verifyOtp({email,token:code,type:'email'}); if(error){authMsg(error.message,true);return;} TOKEN=data.session.access_token; USER=data.session.user; window.TOKEN=TOKEN; window.USER=USER; await afterAuth(); }
 async function loadCorpCtx(){ const info=await rpc('corp_info'); window.CORP=(info&&info.corp)||null; window.ROLE=(info&&info.role)||null; window.MEMBERS=(info&&info.members)||[]; }
@@ -2727,5 +2727,5 @@ async function crBugSend(){
   btn.disabled=false; btn.textContent='Send feedback';
 }
 </script>
-</body>
+<script>(function(){try{var b=document.createElement("div");b.id="netBanner";b.style.cssText="position:fixed;left:0;right:0;bottom:0;z-index:9999;display:none;padding:9px 14px;text-align:center;font:600 12px/1.4 system-ui,-apple-system,sans-serif;background:#7a1f1f;color:#fff;border-top:1px solid #b3454f;letter-spacing:.02em";b.textContent="\u26A0 You appear to be offline \u2014 changes may not sync until you reconnect.";var add=function(){if(document.body)document.body.appendChild(b);};if(document.body)add();else document.addEventListener("DOMContentLoaded",add);window.addEventListener("offline",function(){b.style.display="block";});window.addEventListener("online",function(){b.style.display="none";});if(navigator.onLine===false)b.style.display="block";}catch(e){}try{var qt=new URLSearchParams(location.search).get("tab");if(qt){var k=0,iv=setInterval(function(){k++;try{if(typeof App!=="undefined"&&App.show){App.show(qt);clearInterval(iv);}}catch(e){}if(k>40)clearInterval(iv);},150);}}catch(e){}})();</script></body>
 </html>
