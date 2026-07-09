@@ -1308,7 +1308,7 @@ function renderMarket(){
   const list=Object.entries(rows).map(([slug,v])=>({slug, name:itemName(slug), av:v[0],mn:v[1],mx:v[2],o:v[3],u:v[4]}))
     .filter(x=>!search||x.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a,b)=>b.av-a.av);
-  document.getElementById('mktInfo').textContent = `${Object.keys(rows).length} tradeable items · quadrant ${q} · prices updated ${window.MARKET.updated.slice(0,10)}`;
+  document.getElementById('mktInfo').textContent = `${Object.keys(rows).length} tradeable items · quadrant ${q} · prices updated ${window.MARKET.updated.slice(0,10)} (${(function(u){var d=Math.floor((Date.now()-new Date(u).getTime())/864e5);return d<=0?'today':(d===1?'yesterday':d+' days ago');})(window.MARKET.updated)})`;
   el.innerHTML='<table class="dtable"><thead><tr><th>Item</th><th class="right">Avg</th><th class="right">Min</th><th class="right">Max</th><th class="right">Orders</th><th class="right">Units</th></tr></thead><tbody>'+
     list.map(x=>`<tr onclick="itemDetail('${x.slug}')"><td>${itemCell(x.slug)}</td><td class="right val-avg big">${fmt(x.av)}</td><td class="right val-dim">${fmt(x.mn)}</td><td class="right val-dim">${fmt(x.mx)}</td><td class="right">${x.o||''}</td><td class="right val-dim">${x.u||''}</td></tr>`).join('')+'</tbody></table>';
 }
