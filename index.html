@@ -1068,7 +1068,7 @@ function init(){
   };
   window.onGuest = ()=>{
     const el=$('#syncState'); el.textContent='Anonymous · Join Corp'; el.title='Not signed in — data is saved only on this device. Sign in to sync with your corp.'; el.className=''; el.style.cursor='pointer'; el.onclick=()=>openAuth();
-    if(!localStorage.getItem('corphq:explored')) document.getElementById('landing').style.display='block';
+    if(!sessionStorage.getItem('corphq:explored')) document.getElementById('landing').style.display='block';
     render();
   };
   fetch('data/icons.json').then(r=>r.json()).then(m=>{ window.ICONS=m; render(); }).catch(()=>{});
@@ -1090,7 +1090,7 @@ function init(){
   setTimeout(()=>{ if(window.tryOpenSharedChain) tryOpenSharedChain(); }, 400);
 
 }
-function landingExplore(){ localStorage.setItem('corphq:explored','1'); document.getElementById('landing').style.display='none'; }
+function landingExplore(){ sessionStorage.setItem('corphq:explored','1'); document.getElementById('landing').style.display='none'; }
 function showLanding(){ document.getElementById('landing').style.display='block'; window.scrollTo(0,0); }
 function landingSignIn(){ document.getElementById('landing').style.display='none'; openAuth(); }
 function initLandingStats(){ try{
