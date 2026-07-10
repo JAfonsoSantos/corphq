@@ -259,7 +259,7 @@ body{font-size:14px;-webkit-font-smoothing:antialiased}
   <span class="ver" id="verInfo"></span>
   <nav id="nav"></nav>
   <a href="map/" style="color:var(--accent2);text-decoration:none;font-size:13px">🗺️ Map</a>
-  <span id="syncState" title="Not signed in — data is saved only on this device. Sign in to sync with your corp." style="cursor:pointer" onclick="openAuth()">Anonymous · Join Corp</span>
+  <a href="https://ko-fi.com/corphq" target="_blank" rel="noopener" id="kofiTop" title="Support CorpHQ on Ko-fi" style="margin-left:auto;display:inline-flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.02em;color:#ffd049;background:rgba(255,208,73,.09);border:1px solid rgba(255,208,73,.42);border-radius:10px;padding:7px 13px;text-decoration:none;white-space:nowrap">☕ Tips keep CorpHQ free &amp; running — <b style="color:#fff">Support</b></a><span id="syncState" title="Not signed in — data is saved only on this device. Sign in to sync with your corp." style="cursor:pointer" onclick="openAuth()">Anonymous · Join Corp</span>
 </header>
 <main>
 
@@ -2694,7 +2694,7 @@ function lgBind(){ if(LG_BOUND) return; LG_BOUND=true; var wrap=document.getElem
 }
 </script>
 
-<button id="crBug" title="Report a bug or suggest an idea" onclick="crBugOpen()">🐞</button>
+<button id="crBug" title="Report a bug or suggest an idea" onclick="crBugOpen()">🐞</button><div id="crBugTip"><b style="color:#66e0fa">Found wrong data or a bug?</b><br>Report it or suggest an improvement here — CorpHQ is updated daily. Thank you! 🙏</div><style>#crBugTip{position:fixed;right:14px;bottom:82px;z-index:2147483000;max-width:252px;background:linear-gradient(180deg,rgba(10,22,40,.98),rgba(6,14,26,.98));border:1px solid rgba(102,224,250,.35);border-radius:12px;padding:12px 14px;color:#dce6f2;font:13px/1.5 system-ui,-apple-system,sans-serif;box-shadow:0 12px 30px rgba(2,8,20,.6);opacity:0;transform:translateY(6px);pointer-events:none;transition:opacity .18s ease,transform .18s ease}#crBug:hover ~ #crBugTip,#crBugTip:hover,#crBugTip.peek{opacity:1;transform:translateY(0);pointer-events:auto}#crBugTip:after{content:"";position:absolute;right:26px;bottom:-7px;width:12px;height:12px;background:rgba(6,14,26,.98);border-right:1px solid rgba(102,224,250,.35);border-bottom:1px solid rgba(102,224,250,.35);transform:rotate(45deg)}</style><script>(function(){function pk(){var t=document.getElementById("crBugTip");if(!t)return;t.classList.add("peek");setTimeout(function(){t.classList.remove("peek");},5000);}if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(pk,1200);});else setTimeout(pk,1200);})();</script>
 <div id="crBugPanel">
   <div class="crb-hd"><span style="color:#fff">💬 Report a bug / idea</span><span onclick="crBugClose()">✕</span></div>
   <textarea id="crBugMsg" placeholder="What's the bug or idea? Be as specific as you like…"></textarea>
