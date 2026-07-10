@@ -1699,6 +1699,8 @@ function manualSelect(m){
     +(o.top.length?`<optgroup label="🏠 Your corp">${o.top.map(opt).join('')}</optgroup>`:'')
     +`<optgroup label="${o.type==='craft'?'All recipes':'All resources'}">${o.rest.map(opt).join('')}</optgroup></select>`;
 }
+function lgHandles(el,id){ ['t','r','b','l'].forEach(function(side){ var h=document.createElement('div'); h.className='lh '+side+' pointer'; h.textContent='+'; h.title='click to start a shuttle route, then click another base'; h.addEventListener('click',function(e){ e.stopPropagation(); if(!LG_ROUTING){ LG_ROUTING=true; var b=document.getElementById('lgRouteBtn'); if(b)b.classList.add('act'); } lgRouteClick(id); }); el.appendChild(h); }); }
+function bdHandles(el,id){ ['t','r','b','l'].forEach(function(side){ var h=document.createElement('div'); h.className='lh '+side+' pointer'; h.textContent='+'; h.title='click to start a link, then click another building'; h.addEventListener('click',function(e){ e.stopPropagation(); if(!BD_LINKING){ BD_LINKING=true; var b=document.getElementById('bdLinkBtn'); if(b)b.classList.add('act'); } bdLinkClick(id); }); el.appendChild(h); }); }
 function addLinkHandles(el,key){
   if(!key) return;
   ['t','r','b','l'].forEach(function(side){
@@ -2511,7 +2513,7 @@ function bdRender(){
     var el=document.createElement('div'); el.className='cnode'+(BD_SEL===n.id?' sel':''); el.setAttribute('data-bd', n.id);
     el.style.left=(n.x||40)+'px'; el.style.top=(n.y||40)+'px'; el.style.borderLeft='4px solid '+(COL[n.kind]||'#66e0fa');
     el.innerHTML='<div class="nodeacts"><span class="nact" title="Duplicate" onclick="event.stopPropagation();bdCloneNode(&quot;'+n.id+'&quot;)">⧉</span><span class="nact" title="Delete" onclick="event.stopPropagation();bdDeleteNode(&quot;'+n.id+'&quot;)">🗑</span></div>'+bdNodeInner(n);
-    cv.appendChild(el); bdDrag(el, n);
+    cv.appendChild(el); bdDrag(el, n); bdHandles(el,n.id);
     maxX=Math.max(maxX,(n.x||0)+280); maxY=Math.max(maxY,(n.y||0)+180);
   });
   cv.style.width=maxX+'px'; cv.style.height=maxY+'px';
@@ -2528,7 +2530,7 @@ function bdRedraw(){
 }
 function bdDrag(el, n){
   el.addEventListener('pointerdown', function(ev){
-    if(ev.button!==0 || ev.target.closest('.bact')) return;
+    if(ev.button!==0 || ev.target.closest('.bact,.pointer')) return;
     if(BD_LINKING){ ev.preventDefault(); ev.stopPropagation(); bdLinkClick(n.id); return; }
     ev.preventDefault(); ev.stopPropagation(); el.setPointerCapture(ev.pointerId); el.style.zIndex=50;
     var sx=ev.clientX, sy=ev.clientY, ox=n.x||0, oy=n.y||0, moved=false;
@@ -2640,7 +2642,7 @@ function lgRender(){
   bs.forEach(function(b){ var p=d.pos[b.id]||{x:40,y:40}; var col=cols[b.name]||'#5eb2ff'; var prod=lgProduces(b);
     var el=document.createElement('div'); el.className='cnode'+(LG_SEL===b.id?' sel':''); el.setAttribute('data-lg',b.id); el.style.left=p.x+'px'; el.style.top=p.y+'px'; el.style.borderLeft='4px solid '+col;
     el.innerHTML='<div class="nm">🏠 '+esc(b.name)+'</div><div class="meta">'+esc([b.system,b.planet].filter(Boolean).join(' · ')||'—')+'</div>'+(prod.length?'<div class="meta" style="color:#a78bfa;margin-top:4px">▸ '+prod.slice(0,3).map(function(pr){return esc(itemName(pr.slug))+' '+fmt(pr.rate||0)+'/h';}).join('<br>▸ ')+'</div>':'<div class="meta" style="color:#7d8ba1;margin-top:4px">no production yet</div>');
-    cv.appendChild(el); lgDrag(el,b.id); maxX=Math.max(maxX,p.x+300); maxY=Math.max(maxY,p.y+220);
+    cv.appendChild(el); lgDrag(el,b.id); lgHandles(el,b.id); maxX=Math.max(maxX,p.x+300); maxY=Math.max(maxY,p.y+220);
   });
   cv.style.width=maxX+'px'; cv.style.height=maxY+'px';
   lgApply(); lgRedraw(); lgSide();
@@ -2653,7 +2655,7 @@ function lgRedraw(){ var sv=document.getElementById('lgSvg'), d=lgData(); if(!sv
   });
   sv.innerHTML=svg;
 }
-function lgDrag(el,id){ el.addEventListener('pointerdown',function(ev){ if(ev.button!==0) return; if(LG_ROUTING){ ev.preventDefault();ev.stopPropagation(); lgRouteClick(id); return; } ev.preventDefault();ev.stopPropagation(); el.setPointerCapture(ev.pointerId); el.style.zIndex=50; var d=lgData(); var p=d.pos[id]=d.pos[id]||{x:0,y:0}; var sx=ev.clientX,sy=ev.clientY,ox=p.x,oy=p.y,moved=false; var mv=function(e){ if(Math.abs(e.clientX-sx)>3||Math.abs(e.clientY-sy)>3)moved=true; p.x=ox+(e.clientX-sx)/LG_SCALE; p.y=oy+(e.clientY-sy)/LG_SCALE; el.style.left=p.x+'px'; el.style.top=p.y+'px'; lgRedraw(); }; var up=function(){ el.releasePointerCapture(ev.pointerId); el.style.zIndex=''; el.removeEventListener('pointermove',mv); el.removeEventListener('pointerup',up); if(!moved){ lgSelect(id); } else { p.x=Math.round(p.x); p.y=Math.round(p.y); lgSave(); } }; el.addEventListener('pointermove',mv); el.addEventListener('pointerup',up); }); }
+function lgDrag(el,id){ el.addEventListener('pointerdown',function(ev){ if(ev.button!==0 || (ev.target.closest&&ev.target.closest('.pointer'))) return; if(LG_ROUTING){ ev.preventDefault();ev.stopPropagation(); lgRouteClick(id); return; } ev.preventDefault();ev.stopPropagation(); el.setPointerCapture(ev.pointerId); el.style.zIndex=50; var d=lgData(); var p=d.pos[id]=d.pos[id]||{x:0,y:0}; var sx=ev.clientX,sy=ev.clientY,ox=p.x,oy=p.y,moved=false; var mv=function(e){ if(Math.abs(e.clientX-sx)>3||Math.abs(e.clientY-sy)>3)moved=true; p.x=ox+(e.clientX-sx)/LG_SCALE; p.y=oy+(e.clientY-sy)/LG_SCALE; el.style.left=p.x+'px'; el.style.top=p.y+'px'; lgRedraw(); }; var up=function(){ el.releasePointerCapture(ev.pointerId); el.style.zIndex=''; el.removeEventListener('pointermove',mv); el.removeEventListener('pointerup',up); if(!moved){ lgSelect(id); } else { p.x=Math.round(p.x); p.y=Math.round(p.y); lgSave(); } }; el.addEventListener('pointermove',mv); el.addEventListener('pointerup',up); }); }
 function lgSelect(id){ LG_SEL=id; LG_LANE=-1; document.querySelectorAll('#lgCanvas .cnode').forEach(function(el){ el.classList.toggle('sel', el.getAttribute('data-lg')===id); }); lgSide(); }
 function lgSelectLane(i){ LG_LANE=i; LG_SEL=null; document.querySelectorAll('#lgCanvas .cnode.sel').forEach(function(el){el.classList.remove('sel');}); lgSide(); }
 function lgDeselect(){ LG_SEL=null; LG_LANE=-1; document.querySelectorAll('#lgCanvas .cnode.sel').forEach(function(el){el.classList.remove('sel');}); lgSide(); }
